@@ -7,21 +7,23 @@ export async function GET() {
       include: {
         trailSystem: true,
         rides: {
-          where: { isGroupRide: true },
-          select: { id: true, date: true },
+          include: {  
+            ride: {
+              select: { id: true, date: true },
+            },
+          },
         },
       },
     });
 
-    // Temporary: mock lat/lng if missing
-    const withCoords = trails.map((trail, i) => ({
+    const withCoords = trails.map((trail) => ({
       id: trail.id,
       name: trail.name,
       trailSystem: trail.trailSystem?.name || "Unknown System",
       lat: 33.8 + Math.random() * 0.3,
       lng: -84.6 + Math.random() * 0.3,
       hasGroupRide: trail.rides.length > 0,
-      nextRideDate: trail.rides[0]?.date ?? null,
+      nextRideDate: trail.rides[0]?.ride.date ?? null,
       difficulty: trail.difficulty,
       distanceKm: trail.distanceKm,
     }));

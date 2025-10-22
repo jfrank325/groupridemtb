@@ -1,12 +1,13 @@
-import Image from "next/image";
 import { MainCTAs } from "./components/MainCTAs";
+import { Rides } from "./components/Rides";
+import { Map } from "./components/Map";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col w-full font-roboto">
+      <main className="flex flex-col w-full font-inter bg-gray-50 text-gray-900 md:px-20 py-20 min-h-screen">
+        <Rides />
+        {/* <Map /> */}
         <MainCTAs />
       </main>
-    </div>
   );
 }

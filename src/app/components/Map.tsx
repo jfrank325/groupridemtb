@@ -18,7 +18,7 @@ type Trail = {
   distanceKm?: number | null;
 };
 
-export default function TrailMap() {
+export const Map = () => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [trails, setTrails] = useState<Trail[]>([]);

@@ -11,12 +11,21 @@ model User {
   id          String   @id @default(cuid())
   name        String
   email       String   @unique
-
-  homeTrailId String?
-  homeTrail   Trail?   @relation("HomeTrailRelation", fields: [homeTrailId], references: [id])
+  zip         Int?
 
   rides       RideAttendee[]
   hostRides   Ride[]   @relation("RideHostRelation")
+
+  // 🧭 Favorite Trails
+  favoriteTrails Trail[] @relation("UserFavoriteTrails")
+
+  // 🤝 Friends (mutual handled in app logic)
+  friends      User[]   @relation("UserFriends")
+  friendOf     User[]   @relation("UserFriends")
+
+  // 💬 Messages
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages MessageRecipient[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -34,15 +43,22 @@ model TrailSystem {
 model Trail {
   id             String       @id @default(cuid())
   name           String
+  location       String?
   difficulty     String?
   distanceKm     Float?
   elevationGainM Float?
   description    String?
   trailSystemId  String?
+  lat            Float?
+  lng            Float?
   trailSystem    TrailSystem? @relation(fields: [trailSystemId], references: [id])
+  @@unique([name, location], name: "name_location")
 
-  rides     Ride[] @relation("RideTrailRelation")
-  homeUsers User[] @relation("HomeTrailRelation")
+  // 🔗 Many-to-many with Ride
+  rides          RideTrail[]
+
+  // ❤️ Favorited by users
+  favoredBy      User[] @relation("UserFavoriteTrails")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -51,26 +67,63 @@ model Trail {
 model Ride {
   id          String   @id @default(cuid())
   userId      String
-  trailId     String
   date        DateTime
   durationMin Int
+  name        String?
   notes       String?
-  isGroupRide Boolean  @default(false)
 
-  host  User  @relation("RideHostRelation", fields: [userId], references: [id])
-  trail Trail @relation("RideTrailRelation", fields: [trailId], references: [id])
-  attendees RideAttendee[]
+  host        User  @relation("RideHostRelation", fields: [userId], references: [id])
+  attendees   RideAttendee[]
+  trails      RideTrail[]
+  messages    Message[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// 🔗 Join table between Ride and Trail
+model RideTrail {
+  rideId  String
+  trailId String
+
+  ride  Ride  @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  trail Trail @relation(fields: [trailId], references: [id])
+
+  @@id([rideId, trailId])
 }
 
 model RideAttendee {
   rideId String
   userId String
 
-  ride Ride @relation(fields: [rideId], references: [id])
+  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
 
-  @@id([rideId, userId]) // composite primary key
+  @@id([rideId, userId])
 }
+
+// 💬 Messages (can be individual, group, and tied to a ride)
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  rideId      String?  // optional link to a ride
+  label       String?
+  content     String
+
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipients  MessageRecipient[]
+  ride        Ride?    @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+}
+
+model MessageRecipient {
+  messageId String
+  userId    String
+  read      Boolean @default(false)
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+  @@id([messageId, userId])
+}
+
