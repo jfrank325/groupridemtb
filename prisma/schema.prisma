@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+
+  homeTrailId String?
+  homeTrail   Trail?   @relation("HomeTrailRelation", fields: [homeTrailId], references: [id])
+
+  rides       RideAttendee[]
+  hostRides   Ride[]   @relation("RideHostRelation")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TrailSystem {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  trails    Trail[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Trail {
+  id             String       @id @default(cuid())
+  name           String
+  difficulty     String?
+  distanceKm     Float?
+  elevationGainM Float?
+  description    String?
+  trailSystemId  String?
+  trailSystem    TrailSystem? @relation(fields: [trailSystemId], references: [id])
+
+  rides     Ride[] @relation("RideTrailRelation")
+  homeUsers User[] @relation("HomeTrailRelation")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ride {
+  id          String   @id @default(cuid())
+  userId      String
+  trailId     String
+  date        DateTime
+  durationMin Int
+  notes       String?
+  isGroupRide Boolean  @default(false)
+
+  host  User  @relation("RideHostRelation", fields: [userId], references: [id])
+  trail Trail @relation("RideTrailRelation", fields: [trailId], references: [id])
+  attendees RideAttendee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RideAttendee {
+  rideId String
+  userId String
+
+  ride Ride @relation(fields: [rideId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([rideId, userId]) // composite primary key
+}
