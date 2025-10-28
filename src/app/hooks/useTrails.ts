@@ -16,7 +16,7 @@ export type Trail = {
   trailSystemId: string | null;
   lat: number | null;
   lng: number | null;
-  coordinates: Geometry;
+  coordinates: Geometry | Number[][] | null;
 };
 
 export function useTrails(initialData?: Trail[]) {

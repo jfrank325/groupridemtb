@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import { prisma } from "@/lib/prisma";
-import { useTrails, type Trail } from "../hooks/useTrails";
+import { type Trail } from "../hooks/useTrails";
+import TrailPopup from "./TrailPopup";
 
 export default function TrailMap({ trails }: { trails: Trail[] }) {
-
-
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
+  const [selectedTrail, setSelectedTrail] = useState<Partial<Trail> | null>(null);
+
   useEffect(() => {
     if (!mapContainer.current || mapRef.current || !maptilerKey) return;
-console.log("Initializing map with trails:", trails);
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: `https://api.maptiler.com/maps/outdoor/style.json?key=${maptilerKey}`,
@@ -23,18 +23,16 @@ console.log("Initializing map with trails:", trails);
     });
 
     mapRef.current = map;
-
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.on("load", () => {
-      // Combine all trails into one GeoJSON source for better performance
-      const geojson: GeoJSON.FeatureCollection<GeoJSON.LineString, GeoJSON.GeoJsonProperties> = {
+      const geojson: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: trails.map((trail) => ({
           type: "Feature",
           geometry: {
             type: "LineString",
-            coordinates: trail.coordinates as unknown as GeoJSON.Position[],
+            coordinates: (trail.coordinates as unknown as [number, number][]),
           },
           properties: {
             id: trail.id,
@@ -44,19 +42,13 @@ console.log("Initializing map with trails:", trails);
         })),
       };
 
-      map.addSource("trails", {
-        type: "geojson",
-        data: geojson,
-      });
+      map.addSource("trails", { type: "geojson", data: geojson });
 
       map.addLayer({
         id: "trail-lines",
         type: "line",
         source: "trails",
-        layout: {
-          "line-join": "round",
-          "line-cap": "round",
-        },
+        layout: { "line-join": "round", "line-cap": "round" },
         paint: {
           "line-color": [
             "match",
@@ -70,23 +62,23 @@ console.log("Initializing map with trails:", trails);
         },
       });
 
-      // Popup on click
+      // ✅ Replace popup with React state handler
       map.on("click", "trail-lines", (e) => {
         const feature = e.features?.[0];
-        if (!feature || feature.geometry?.type !== "LineString") return;
+        if (!feature) return;
 
-        const coordinates = (feature.geometry as any).coordinates[Math.floor((feature.geometry as any).coordinates.length / 2)];
-        const { name, difficulty } = feature.properties as any;
+        const coords = (feature.geometry as any).coordinates;
+        const midpoint = coords[Math.floor(coords.length / 2)];
+        const [lng, lat] = midpoint;
 
-        new maplibregl.Popup()
-          .setLngLat(coordinates)
-          .setHTML(
-            `<strong>${name}</strong><br/>Difficulty: ${difficulty}<br/><button id="joinRideBtn" style="margin-top:5px;padding:4px 8px;border-radius:4px;background:#0070f3;color:white;border:none;cursor:pointer;">Join Ride</button>`
-          )
-          .addTo(map);
+        setSelectedTrail({
+          id: feature.properties?.id,
+          name: feature.properties?.name,
+          difficulty: feature.properties?.difficulty,
+          coordinates: [[lng, lat]],
+        });
       });
 
-      // Cursor change on hover
       map.on("mouseenter", "trail-lines", () => {
         map.getCanvas().style.cursor = "pointer";
       });
@@ -101,11 +93,15 @@ console.log("Initializing map with trails:", trails);
   }, [trails, maptilerKey]);
 
   return (
-    <div
-      ref={mapContainer}
-      className="w-full h-[600px] rounded-xl shadow-md relative"
-    >
-      {/* Attribution overlay */}
+    <div className="relative w-full h-[600px] rounded-xl shadow-md">
+      <div ref={mapContainer} className="w-full h-full" />
+      {selectedTrail && (
+        <TrailPopup
+          trail={selectedTrail}
+          map={mapRef.current}
+          onClose={() => setSelectedTrail(null)}
+        />
+      )}
       <div className="absolute bottom-2 left-2 text-xs text-gray-600 bg-white/80 px-2 py-1 rounded">
         © MapTiler © OpenStreetMap contributors
       </div>
