@@ -1,10 +1,11 @@
+
 import { prisma } from "@/lib/prisma";
 import { useRides, type Ride } from "../hooks/useRides";
 import { RidesClient } from "./RidesClient";
 
 export const RidesServer = async () => {
 
-    const ridesData = await prisma.ride.findMany({
+    const ridesData = await prisma.ride?.findMany({
         include: {
             trails: {
                 include: {

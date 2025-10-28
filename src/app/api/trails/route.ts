@@ -16,19 +16,9 @@ export async function GET() {
       },
     });
 
-    const withCoords = trails.map((trail) => ({
-      id: trail.id,
-      name: trail.name,
-      trailSystem: trail.trailSystem?.name || "Unknown System",
-      lat: 33.8 + Math.random() * 0.3,
-      lng: -84.6 + Math.random() * 0.3,
-      hasGroupRide: trail.rides.length > 0,
-      nextRideDate: trail.rides[0]?.ride.date ?? null,
-      difficulty: trail.difficulty,
-      distanceKm: trail.distanceKm,
-    }));
 
-    return NextResponse.json(withCoords);
+
+    return NextResponse.json(trails);
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Failed to fetch trails" }, { status: 500 });

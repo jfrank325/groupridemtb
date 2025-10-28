@@ -8,10 +8,11 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  zip         Int?
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  passwordHash   String? 
+  zip            Int?
 
   rides       RideAttendee[]
   hostRides   Ride[]   @relation("RideHostRelation")
@@ -51,6 +52,7 @@ model Trail {
   trailSystemId  String?
   lat            Float?
   lng            Float?
+  coordinates    Json
   trailSystem    TrailSystem? @relation(fields: [trailSystemId], references: [id])
   @@unique([name, location], name: "name_location")
 

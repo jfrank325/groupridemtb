@@ -1,7 +1,9 @@
 import { useRide, type Ride } from "../hooks/useRide";
 
 export const RideSummary = ({ ride }: { ride: Ride }) => {
-
+const joinRide = () => {
+    
+}
     
     return (
         <>
@@ -16,6 +18,7 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
                         <li key={trailName}>{trailName}</li>
                     ))}
                 </ul>
+                <button className="" onClick={() => joinRide()}>Join Ride</button>
             </div>
         )}
         </>
