@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import BasicButton from "./BasicButton";
 
 
@@ -11,7 +12,7 @@ export default function Login({session}: {session: any}) {
     console.log({session}, 'session');
     return (
         <>
-            {session ? <BasicButton onClick={() => signOut()}>Sign Out</BasicButton> : <BasicButton onClick={() => signIn()}>Sign In</BasicButton>}
+            {session ? <Link href="/profile">Profile</Link> : <BasicButton onClick={() => signIn()}>Sign In</BasicButton>}
         </>
     )
 }
