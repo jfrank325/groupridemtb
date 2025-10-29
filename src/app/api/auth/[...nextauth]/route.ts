@@ -3,22 +3,22 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     Credentials({
       credentials: { email: {}, password: {} },
       async authorize(credentials) {
         const user = await prisma.user.findUnique({
           where: { email: credentials?.email },
         });
-        if (!user) return null;
-        return user;
+        if (!user || !user.passwordHash) return null;
+
+        const isValid = await bcrypt.compare(String(credentials?.password), user.passwordHash);
+        return isValid ? user : null;
       },
     }),
   ],

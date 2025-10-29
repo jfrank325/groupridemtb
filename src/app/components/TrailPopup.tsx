@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import maplibregl from "maplibre-gl";
 import { Trail } from "../hooks/useTrails";
+import Link from "next/link";
 
 interface TrailPopupProps {
     trail: Partial<Trail>;
@@ -39,12 +40,17 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
 
     // return null;
     return (
-        <div className="absolute z-10 bg-white p-4 rounded shadow-lg" style={{
+        <div className="absolute z-10 bg-white p-4 rounded shadow-lg text-center" style={{
             left: '50%',
             top: '50%',
             transform: 'translate(-50%, -50%)',
         }}>
-        <h1>{trail.name}</h1>
+            <h5>{trail.name}</h5>
+            <div className="flex">
+                <button className="border-2 border-blue-500 text-blue-500 px-4 py-2 rounded mr-2">Join Ride</button>
+                <button className="border-2 border-blue-500 text-blue-500 px-4 py-2 rounded mr-2"><Link href={`/rides/new?trailId=${trail.id}`}>Create Ride</Link></button>
+            </div>
+
         </div>
     )
 }

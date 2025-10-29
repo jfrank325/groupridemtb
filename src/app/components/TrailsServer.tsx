@@ -8,7 +8,7 @@ export const TrailsServer = async () => {
 
     const trailsData = await prisma.trail?.findMany({
     });
-console.log({trailsData})
+    console.log({ trailsData })
     // Cast/map the Prisma JsonValue coordinates to the application's Trail type so the prop matches.
     const trails: Trail[] = (trailsData ?? []).map((t) => ({
         ...t,

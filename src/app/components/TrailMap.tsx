@@ -54,7 +54,7 @@ export default function TrailMap({ trails }: { trails: Trail[] }) {
             "match",
             ["get", "difficulty"],
             "Easy", "#4CAF50",
-            "Intermediate", "#FFC107",
+            "Intermediate", "#0070f3",
             "Advanced", "#F44336",
             "#0070f3",
           ],
