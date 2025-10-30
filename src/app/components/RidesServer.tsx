@@ -1,7 +1,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { useRides, type Ride } from "../hooks/useRides";
-import { RidesClient } from "./RidesClient";
+import { RidesList } from "./RidesList";
 
 export const RidesServer = async () => {
 
@@ -36,6 +36,6 @@ export const RidesServer = async () => {
     });
 
     return (
-        <RidesClient rides={rides} />
+        <RidesList title="Upcoming Rides" rides={rides} />
     )
 }

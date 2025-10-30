@@ -9,7 +9,7 @@ export type Ride = {
   name: string | null;
   trailIds: string[];
   trailNames: string[];
-  trailSystems: string[];
+  // trailSystems: string[];
   difficulties: string[];
   totalDistanceKm: number;
   lat: number;

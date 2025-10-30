@@ -5,12 +5,17 @@ import { useState } from "react";
 import Modal from "./Modal";
 import { RideSummary } from "./RideSummary";
 
-export const RidesClient = ({ rides }: { rides: Ride[] }) => {
+interface RidesListProps {
+    title: string;
+    rides: Ride[];
+}
+
+export const RidesList = ({ title, rides }: RidesListProps) => {
     const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
 
     return (
         <section className="md:max-w-1/2">
-            <h1 className="text-3xl pb-4">Upcoming Rides</h1>
+            <h1 className="text-3xl pb-4">{title}</h1>
             {rides.length === 0 ? (
                 <p>No rides scheduled.</p>
             ) : (
