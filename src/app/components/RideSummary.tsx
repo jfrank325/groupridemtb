@@ -51,6 +51,13 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
     alert("Message sent!");
   };
 
+  // Check if user has already joined the ride
+  const hasJoined = currentUserId && ride.attendees.some(attendee => attendee.id === currentUserId);
+  // Check if user is the host
+  const isHost = currentUserId && ride.host && ride.host.id === currentUserId;
+  // Show join button only if user is logged in, not the host, and hasn't joined
+  const showJoinButton = session && currentUserId && !isHost && !hasJoined;
+
   return (
     <>
       {ride && (
@@ -68,7 +75,14 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
             })}
           </p>
           {ride.host && (
-            <p className="text-gray-600 mb-2">Host: {ride.host.name}</p>
+            <p className="text-gray-600 mb-2">
+              Host: {ride.host.name}
+              {isHost && (
+                <span className="ml-2 text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
+                  You
+                </span>
+              )}
+            </p>
           )}
           {ride.notes && (
             <p className="text-gray-700 mb-4">{ride.notes}</p>
@@ -81,17 +95,24 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
           </ul>
           <p className="text-gray-600 mb-4">
             Attendees: {ride.attendees.length}
+            {hasJoined && (
+              <span className="ml-2 text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
+                You're attending
+              </span>
+            )}
           </p>
-          <div className="flex gap-2">
-            <button 
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" 
-              onClick={() => joinRide()}
-            >
-              Join Ride
-            </button>
+          <div className="flex gap-2 flex-wrap">
+            {showJoinButton && (
+              <button 
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium" 
+                onClick={() => joinRide()}
+              >
+                Join Ride
+              </button>
+            )}
             {session && (
               <button 
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600" 
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium" 
                 onClick={() => setShowMessageForm(!showMessageForm)}
               >
                 {showMessageForm ? "Cancel" : "Message About Ride"}

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { RidesList } from "../components/RidesList";
 import LogoutButton from "../components/LogoutButton";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function ProfilePage() {
     const session = await getServerSession(authOptions);
@@ -20,9 +21,9 @@ export default async function ProfilePage() {
                 include: {
                     ride: {
                         include: {
-                            host: true, // host user
-                            attendees: { include: { user: true } }, // all attendees with their user info
-                            trails: { include: { trail: { include: { trailSystem: true } } } }, // the trails for this ride
+                            host: { select: { id: true, name: true } },
+                            attendees: { include: { user: true } },
+                            trails: { include: { trail: { include: { trailSystem: true } } } },
                         },
                     },
                 },
@@ -31,45 +32,113 @@ export default async function ProfilePage() {
             favoriteTrails: true,
         },
     });
-    console.log({ session, fullUser }, 'profile session');
+
     const rides = fullUser?.rides?.map((r) => {
         const ride = r.ride;
-        const trailIds = ride.trails.map((t) => t.trail.id);
-        const trailNames = ride.trails.map((t) => t.trail.name);
-        const difficulties = ride.trails.map((t) => t.trail.difficulty || "Unknown");
-        const totalDistanceKm = ride.trails.reduce((sum, t) => sum + (t.trail.distanceKm || 0), 0);
-        const trailSystems = Array.from(new Set(ride.trails.map((t) => t.trail.trailSystem?.name || t.trail.name || "Unknown")));
+        const rideTrails = ride.trails.map((rt) => rt.trail);
+        const trailIds = rideTrails.map((t) => t.id);
+        const trailNames = rideTrails.map((t) => t.name);
+        const difficulties = rideTrails.map((t) => t.difficulty || "Unknown");
+        const totalDistanceKm = rideTrails.reduce((sum, t) => sum + (t.distanceKm || 0), 0);
+        const trailSystems = Array.from(new Set(rideTrails.map((t) => t.trailSystem?.name || t.name || "Unknown")));
         return {
             id: ride.id,
             name: ride.name,
-            host: ride.host,
+            host: ride.host ? { id: ride.host.id, name: ride.host.name } : undefined,
             notes: ride.notes,
             attendees: (ride.attendees || []).map((a) => ({ id: a.user.id, name: a.user.name })),
             date: ride.date ? ride.date.toISOString() : "",
-            // Get trail info from the first trail for simplicity
             trailIds,
             trailNames,
-            lat: 33.8 + Math.random() * 0.3,
-            lng: -84.6 + Math.random() * 0.3,
+            trailSystems,
             difficulties,
             totalDistanceKm,
-            trailSystems,
+            lat: 33.8 + Math.random() * 0.3,
+            lng: -84.6 + Math.random() * 0.3,
         }
     });
 
-
     return (
-        <section>
-            <h1 className="text-3xl font-semibold mb-6">Profile Page</h1>
-            <p>{session?.user?.name}</p>
-            <p>{session?.user?.email}</p>
-            <p>{fullUser?.zip}</p>
-            {rides?.length && rides.length > 0&& (
-                <div>
-                    <RidesList title="Your Rides" rides={rides} />
+        <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
+            {/* Hero Section */}
+            <section className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+                    <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 mb-4">
+                            <span className="text-3xl font-bold text-white">
+                                {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+                            </span>
+                        </div>
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
+                            {session?.user?.name || "User"}'s Profile
+                        </h1>
+                        <p className="text-lg text-gray-600">{session?.user?.email}</p>
+                    </div>
                 </div>
-            )}
-            <LogoutButton />
-        </section>
-    )
+            </section>
+
+            {/* Profile Content */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                    {/* Profile Info Card */}
+                    <div className="lg:col-span-1">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile Information</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Name</label>
+                                    <p className="text-gray-900 font-medium">{session?.user?.name || "Not set"}</p>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Email</label>
+                                    <p className="text-gray-900 font-medium">{session?.user?.email}</p>
+                                </div>
+                                {fullUser?.zip && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500">ZIP Code</label>
+                                        <p className="text-gray-900 font-medium">{fullUser.zip}</p>
+                                    </div>
+                                )}
+                                {fullUser?.favoriteTrails && fullUser.favoriteTrails.length > 0 && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500">Favorite Trails</label>
+                                        <p className="text-gray-900 font-medium">{fullUser.favoriteTrails.length}</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <LogoutButton />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Rides Section */}
+                    <div className="lg:col-span-2">
+                        {rides && rides.length > 0 ? (
+                            <RidesList title="Your Rides" rides={rides} />
+                        ) : (
+                            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                                <svg 
+                                    className="w-16 h-16 mx-auto text-gray-300 mb-4" 
+                                    fill="none" 
+                                    viewBox="0 0 24 24" 
+                                    stroke="currentColor"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No rides yet</h3>
+                                <p className="text-gray-500 mb-4">You haven't joined any rides yet.</p>
+                                <Link
+                                    href="/rides"
+                                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-xl"
+                                >
+                                    Browse Rides
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
+        </main>
+    );
 }
