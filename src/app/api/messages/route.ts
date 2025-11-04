@@ -82,6 +82,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // If this is a ride message, automatically include all ride attendees (host + attendees) as recipients
+    let finalRecipientIds = [...recipientIds];
+    if (rideId) {
+      const ride = await prisma.ride.findUnique({
+        where: { id: rideId },
+        include: {
+          host: { select: { id: true } },
+          attendees: { include: { user: { select: { id: true } } } },
+        },
+      });
+
+      if (ride) {
+        // Add host if not already included
+        if (ride.userId !== user.id && !finalRecipientIds.includes(ride.userId)) {
+          finalRecipientIds.push(ride.userId);
+        }
+        // Add all attendees if not already included
+        ride.attendees.forEach((attendee) => {
+          if (attendee.userId !== user.id && !finalRecipientIds.includes(attendee.userId)) {
+            finalRecipientIds.push(attendee.userId);
+          }
+        });
+      }
+    }
+
+    // Remove duplicates
+    finalRecipientIds = Array.from(new Set(finalRecipientIds));
+
     // Create the message
     const message = await prisma.message.create({
       data: {
@@ -90,7 +118,7 @@ export async function POST(req: Request) {
         rideId: rideId || null,
         label: label || null,
         recipients: {
-          create: recipientIds.map((recipientId: string) => ({
+          create: finalRecipientIds.map((recipientId: string) => ({
             userId: recipientId,
             read: false,
           })),

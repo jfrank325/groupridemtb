@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { MessageForm } from "./MessageForm";
 import Link from "next/link";
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface Message {
   id: string;
   content: string;
@@ -61,6 +67,9 @@ export function MessagesClient() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showNewMessageForm, setShowNewMessageForm] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   useEffect(() => {
     async function fetchCurrentUser() {
@@ -76,7 +85,20 @@ export function MessagesClient() {
     }
     fetchCurrentUser();
     fetchConversations();
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    }
+  };
 
   const fetchConversations = async () => {
     try {
@@ -112,6 +134,19 @@ export function MessagesClient() {
         setSelectedConversation(updated);
       }
     }
+    // If sending new message, reset form
+    if (showNewMessageForm) {
+      setShowNewMessageForm(false);
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleUserToggle = (userId: string) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
   };
 
   if (loading) {
@@ -123,11 +158,55 @@ export function MessagesClient() {
       {/* Conversations List */}
       <div className="lg:w-1/3 border border-gray-200 rounded-lg bg-white overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <h2 className="text-xl font-semibold">Conversations</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Conversations</h2>
+            <button
+              onClick={() => setShowNewMessageForm(!showNewMessageForm)}
+              className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+            >
+              {showNewMessageForm ? "Cancel" : "New Message"}
+            </button>
+          </div>
         </div>
+        {showNewMessageForm && (
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-sm font-semibold mb-3">Select Recipients</h3>
+            <div className="max-h-48 overflow-y-auto space-y-2 mb-4">
+              {users.length === 0 ? (
+                <p className="text-sm text-gray-500">Loading users...</p>
+              ) : (
+                users.map((user) => (
+                  <label
+                    key={user.id}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedUserIds.includes(user.id)}
+                      onChange={() => handleUserToggle(user.id)}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm text-gray-700">{user.name}</span>
+                    <span className="text-xs text-gray-500">({user.email})</span>
+                  </label>
+                ))
+              )}
+            </div>
+            {selectedUserIds.length > 0 && (
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-semibold mb-2">Send Message</h4>
+                <MessageForm
+                  recipientIds={selectedUserIds}
+                  onSent={handleMessageSent}
+                  placeholder="Type your message..."
+                />
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">No conversations yet</div>
+            <div className="p-4 text-center text-gray-700">No conversations yet</div>
           ) : (
             conversations.map((conversation) => {
               const otherParticipants = conversation.participants.filter(
@@ -150,8 +229,8 @@ export function MessagesClient() {
                       }
                     });
                   }}
-                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                    selectedConversation?.id === conversation.id ? "bg-blue-50" : ""
+                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors ${
+                    selectedConversation?.id === conversation.id ? "bg-emerald-50 border-l-4 border-l-emerald-600" : ""
                   }`}
                 >
                   <div className="flex justify-between items-start">
@@ -162,7 +241,7 @@ export function MessagesClient() {
                           {conversation.lastMessage.content}
                         </p>
                       )}
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-600 mt-1">
                         {conversation.lastMessage
                           ? new Date(conversation.lastMessage.createdAt).toLocaleDateString()
                           : ""}
@@ -197,7 +276,7 @@ export function MessagesClient() {
               {selectedConversation.ride && (
                 <Link
                   href={`/rides/${selectedConversation.ride.id}`}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-emerald-600 hover:text-emerald-700 hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 rounded"
                 >
                   View Ride Details
                 </Link>
@@ -219,11 +298,11 @@ export function MessagesClient() {
                       <div
                         className={`max-w-[70%] rounded-lg p-3 ${
                           isSender
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200 text-gray-900"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-gray-100 text-gray-900 border border-gray-200"
                         }`}
                       >
-                        <div className="text-xs opacity-75 mb-1">
+                        <div className={`text-xs mb-1 ${isSender ? 'text-white opacity-90' : 'text-gray-600'}`}>
                           {message.sender.name} • {new Date(message.createdAt).toLocaleString()}
                         </div>
                         <div>{message.content}</div>

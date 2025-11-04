@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const rides = await prisma.ride.findMany({
+      where: {
+        date: {
+          gt: new Date(), // Only get rides in the future
+        },
+      },
+      orderBy: { date: "asc" },
       include: {
         trails: {
           include: {

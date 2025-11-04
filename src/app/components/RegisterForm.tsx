@@ -49,7 +49,7 @@ export default function RegisterForm() {
                 type="name"
                 id="name"
                 {...register('name')}
-                className="border rounded p-2 w-full"
+                className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder:text-gray-500"
             />
             {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
         </div>
@@ -60,7 +60,7 @@ export default function RegisterForm() {
                 type="text"
                 id="email"
                 {...register('email')}
-                className="border rounded p-2 w-full"
+                className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder:text-gray-500"
             />
             {errors.email && (
                 <p className="text-red-500 text-sm">{errors.email.message}</p>
@@ -72,7 +72,7 @@ export default function RegisterForm() {
             <textarea
                 id="password"
                 {...register('passwordHash')}
-                className="border rounded p-2 w-full"
+                className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder:text-gray-500"
             />
             {errors.passwordHash && (
                 <p className="text-red-500 text-sm">{errors.passwordHash.message}</p>
@@ -83,7 +83,7 @@ export default function RegisterForm() {
             <textarea
                 id="zip"
                 {...register('zip')}
-                className="border rounded p-2 w-full"
+                className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder:text-gray-500"
             />
             {errors.zip && (
                 <p className="text-red-500 text-sm">{errors.zip.message}</p>
@@ -92,7 +92,7 @@ export default function RegisterForm() {
 
         <button
             type="submit"
-            className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+            className="bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium"
         >
             Submit
         </button>

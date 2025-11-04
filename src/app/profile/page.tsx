@@ -5,6 +5,7 @@ import { RidesList } from "../components/RidesList";
 import LogoutButton from "../components/LogoutButton";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { MessagesLink } from "../components/MessagesLink";
 
 export default async function ProfilePage() {
     const session = await getServerSession(authOptions);
@@ -106,7 +107,8 @@ export default async function ProfilePage() {
                                     </div>
                                 )}
                             </div>
-                            <div className="mt-6 pt-6 border-t border-gray-200">
+                            <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
+                                <MessagesLink />
                                 <LogoutButton />
                             </div>
                         </div>

@@ -6,6 +6,12 @@ import { type Trail } from "../hooks/useTrails";
 export const RidesAndTrailsServer = async () => {
   // Fetch rides data
   const ridesData = await prisma.ride?.findMany({
+    where: {
+      date: {
+        gt: new Date(), // Only get rides in the future
+      },
+    },
+    orderBy: { date: "asc" },
     include: {
       trails: {
         include: {

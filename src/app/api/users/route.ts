@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
+// GET all users (for messaging)
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -18,18 +19,26 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Count all messages where user is a recipient (this now includes all ride attendees automatically)
-    const unreadCount = await prisma.messageRecipient.count({
+    // Get all users except the current user
+    const users = await prisma.user.findMany({
       where: {
-        userId: user.id,
-        read: false,
+        id: {
+          not: user.id,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      orderBy: {
+        name: "asc",
       },
     });
 
-    return NextResponse.json({ count: unreadCount });
+    return NextResponse.json(users);
   } catch (error) {
-    console.error("[GET_UNREAD_COUNT]", error);
-    return NextResponse.json({ error: "Failed to fetch unread count" }, { status: 500 });
+    console.error("[GET_USERS]", error);
+    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
   }
 }
-

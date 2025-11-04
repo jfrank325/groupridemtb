@@ -70,26 +70,26 @@ export function Navigation({ session }: NavigationProps) {
           <div className="hidden md:flex items-center gap-6">
             <Link 
               href="/trails" 
-              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded"
             >
               Trails
             </Link>
             <Link 
               href="/rides" 
-              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded"
             >
               Rides
             </Link>
             <Link 
               href="/about" 
-              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded"
             >
               About
             </Link>
             {!session && (
               <Link 
                 href="/register" 
-                className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+                className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded"
               >
                 Register
               </Link>

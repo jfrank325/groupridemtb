@@ -30,7 +30,7 @@ export function TrailsList({ trails }: TrailsListProps) {
         <div className="flex gap-2">
           <button
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
               filter === "all"
                 ? "bg-emerald-600 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -40,7 +40,7 @@ export function TrailsList({ trails }: TrailsListProps) {
           </button>
           <button
             onClick={() => setFilter("easy")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
               filter === "easy"
                 ? "bg-green-600 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -50,7 +50,7 @@ export function TrailsList({ trails }: TrailsListProps) {
           </button>
           <button
             onClick={() => setFilter("intermediate")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               filter === "intermediate"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -60,7 +60,7 @@ export function TrailsList({ trails }: TrailsListProps) {
           </button>
           <button
             onClick={() => setFilter("advanced")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
               filter === "advanced"
                 ? "bg-red-600 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -87,7 +87,7 @@ export function TrailsList({ trails }: TrailsListProps) {
               d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
             />
           </svg>
-          <p className="text-gray-500 text-lg">No trails found.</p>
+          <p className="text-gray-700 text-lg">No trails found.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -95,7 +95,7 @@ export function TrailsList({ trails }: TrailsListProps) {
             <Link
               key={trail.id}
               href={`/trails/${trail.id}`}
-              className="bg-white rounded-xl border border-gray-200 p-6 hover:border-emerald-300 hover:shadow-lg transition-all group"
+              className="bg-white rounded-xl border border-gray-200 p-6 hover:border-emerald-300 hover:shadow-lg transition-all group focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2 focus-within:outline-none"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -127,7 +127,7 @@ export function TrailsList({ trails }: TrailsListProps) {
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                 {trail.distanceKm && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Distance</p>
+                    <p className="text-xs text-gray-600 mb-1">Distance</p>
                     <p className="text-sm font-semibold text-gray-900">
                       {trail.distanceKm.toFixed(1)} km
                     </p>
@@ -135,7 +135,7 @@ export function TrailsList({ trails }: TrailsListProps) {
                 )}
                 {trail.elevationGainM && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Elevation</p>
+                    <p className="text-xs text-gray-600 mb-1">Elevation</p>
                     <p className="text-sm font-semibold text-gray-900">
                       {trail.elevationGainM.toFixed(0)} m
                     </p>

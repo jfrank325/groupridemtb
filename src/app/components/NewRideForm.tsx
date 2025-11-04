@@ -55,13 +55,13 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
       {/* Ride Name */}
       <div>
         <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
-          Ride Name <span className="text-gray-400 font-normal">(optional)</span>
+          Ride Name <span className="text-gray-600 font-normal">(optional)</span>
         </label>
         <input
           type="text"
           id="name"
           placeholder="e.g., Saturday Morning Ride, Epic Trail Adventure"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-900 placeholder:text-gray-500"
         />
       </div>
 
@@ -127,7 +127,7 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
             id="date"
             {...register('date')}
             min={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-900 placeholder:text-gray-500"
           />
           {errors.date && (
             <p className="text-red-500 text-sm mt-2">{errors.date.message}</p>
@@ -144,7 +144,7 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
             min="1"
             {...register('durationMin', { valueAsNumber: true })}
             placeholder="120"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-900 placeholder:text-gray-500"
           />
           {errors.durationMin && (
             <p className="text-red-500 text-sm mt-2">{errors.durationMin.message}</p>
@@ -155,14 +155,14 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
       {/* Notes */}
       <div>
         <label htmlFor="notes" className="block text-sm font-semibold text-gray-900 mb-2">
-          Notes <span className="text-gray-400 font-normal">(optional)</span>
+          Notes <span className="text-gray-600 font-normal">(optional)</span>
         </label>
         <textarea
           id="notes"
           {...register('notes')}
           rows={4}
           placeholder="Add any additional details about the ride, meeting point, what to bring, etc."
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none text-gray-900 placeholder:text-gray-500"
         />
       </div>
 
