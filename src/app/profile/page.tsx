@@ -2,9 +2,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { RidesList } from "../components/RidesList";
+import LogoutButton from "../components/LogoutButton";
+import { redirect } from "next/navigation";
 
 export default async function ProfilePage() {
     const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+        redirect("/login");
+    }
+
     const fullUser = await prisma.user.findUnique({
         where: { email: session?.user?.email || undefined },
         include: {
@@ -60,15 +67,9 @@ export default async function ProfilePage() {
             {rides?.length && rides.length > 0&& (
                 <div>
                     <RidesList title="Your Rides" rides={rides} />
-                    {/* <ul>
-                        {fullUser.rides.map((ride) => (
-                            <li key={ride.rideId} className="mb-2">
-                                Ride on {new Date(ride.ride.date).toLocaleDateString()} at {new Date(ride.ride.date).toLocaleTimeString()}
-                            </li>
-                        ))}
-                    </ul> */}
                 </div>
             )}
+            <LogoutButton />
         </section>
     )
 }

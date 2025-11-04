@@ -1,15 +1,28 @@
 "use client";
 
-import { ButtonHTMLAttributes } from "react";
+import React from "react";
 
-export default function BasicButton({
+type ButtonProps = {
+  children: React.ReactNode;
+  onClick?: () => void;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  className?: string;
+};
+
+export default function Button({
   children,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  onClick,
+  type = "button",
+  disabled = false,
+  className = "",
+}: ButtonProps) {
   return (
     <button
-      {...props}
-      className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition"
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-lg px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 ${className}`}
     >
       {children}
     </button>

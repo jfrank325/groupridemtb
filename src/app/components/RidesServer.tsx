@@ -13,6 +13,7 @@ export const RidesServer = async () => {
                 },
             },
             attendees: { include: { user: true } },
+            host: { select: { id: true, name: true } },
         },
     });
 
@@ -32,6 +33,7 @@ export const RidesServer = async () => {
             lat: 33.8 + Math.random() * 0.3,
             lng: -84.6 + Math.random() * 0.3,
             attendees: ride.attendees.map((a) => ({ id: a.user.id, name: a.user.name })),
+            host: ride.host ? { id: ride.host.id, name: ride.host.name } : undefined,
         };
     });
 

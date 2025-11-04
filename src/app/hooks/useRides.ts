@@ -15,6 +15,7 @@ export type Ride = {
   lat: number;
   lng: number;
   attendees: { id: string; name: string }[];
+  host?: { id: string; name: string };
 };
 
 export function useRides(initialData?: Ride[]) {

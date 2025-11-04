@@ -5,12 +5,18 @@ import maplibregl from "maplibre-gl";
 import { type Trail } from "../hooks/useTrails";
 import TrailPopup from "./TrailPopup";
 
-export default function TrailMap({ trails }: { trails: Trail[] }) {
+interface TrailMapProps {
+  trails: Trail[];
+  highlightedTrailId?: string | null;
+}
+
+export default function TrailMap({ trails, highlightedTrailId }: TrailMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
   const [selectedTrail, setSelectedTrail] = useState<Partial<Trail> | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current || !maptilerKey) return;
@@ -18,8 +24,8 @@ export default function TrailMap({ trails }: { trails: Trail[] }) {
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: `https://api.maptiler.com/maps/outdoor/style.json?key=${maptilerKey}`,
-      center: [-84.6, 33.8],
-      zoom: 10,
+      center: [-84.389, 33.75],
+      zoom: 9,
     });
 
     mapRef.current = map;
@@ -59,6 +65,7 @@ export default function TrailMap({ trails }: { trails: Trail[] }) {
             "#0070f3",
           ],
           "line-width": 3,
+          "line-opacity": 1,
         },
       });
 
@@ -85,12 +92,50 @@ export default function TrailMap({ trails }: { trails: Trail[] }) {
       map.on("mouseleave", "trail-lines", () => {
         map.getCanvas().style.cursor = "";
       });
+
+      setIsMapLoaded(true);
     });
 
     return () => {
-      map.remove();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      setIsMapLoaded(false);
     };
   }, [trails, maptilerKey]);
+
+  // Update map styling when highlightedTrailId changes
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return;
+
+    const map = mapRef.current;
+    
+    // Check if map is loaded and layer exists
+    if (!map.loaded() || !map.getLayer("trail-lines")) return;
+
+    const highlightId = highlightedTrailId || "";
+
+    try {
+      map.setPaintProperty("trail-lines", "line-width", [
+        "case",
+        ["==", ["get", "id"], highlightId],
+        6,
+        3,
+      ]);
+
+      map.setPaintProperty("trail-lines", "line-opacity", [
+        "case",
+        ["==", ["get", "id"], highlightId],
+        1,
+        ["!=", highlightId, ""],
+        0.3,
+        1,
+      ]);
+    } catch (error) {
+      console.error("Error updating map paint properties:", error);
+    }
+  }, [highlightedTrailId, isMapLoaded]);
 
   return (
     <div className="relative w-full h-[600px] rounded-xl shadow-md">

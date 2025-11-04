@@ -6,6 +6,7 @@ import Login from "./components/Login";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { UserProvider } from "@/app/context/UserContext";
+import { MessagesIcon } from "./components/MessagesIcon";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,16 +47,60 @@ export default async function RootLayout({
 
         <body
           className={`${geistSans.variable} ${inter.variable} antialiased`}>
-          <nav className="flex h-14 bg-gray-50 border-b border-b-gray-200 items-center px-6 text-2xl text-black z-10">
-            <Link href="/" className="whitespace-nowrap">Group Ride MTB</Link>
-            <div className="flex justify-center gap-12 w-full">
-              <Link href="/trails" className="cursor-pointer">Trails</Link>
-              <Link href="/rides" className="cursor-pointer">Rides</Link>
-              <Link href="/about" className="cursor-pointer">About</Link>
-              {!session && <Link href="/register" className="cursor-pointer">Register</Link>}
-              {/* {loggedIn ? <Link href="/profile" className="cursor-pointer">Profile</Link> : <Link href="/login" className="cursor-pointer">Login</Link>} */}
-
-              <Login session={session} />
+          <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex h-16 items-center justify-between">
+                <Link 
+                  href="/" 
+                  className="flex items-center space-x-2 group"
+                >
+                  <svg 
+                    className="w-8 h-8 text-emerald-600 group-hover:text-emerald-700 transition-colors" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                    Group Ride MTB
+                  </span>
+                </Link>
+                <div className="flex items-center gap-6">
+                  <Link 
+                    href="/trails" 
+                    className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    Trails
+                  </Link>
+                  <Link 
+                    href="/rides" 
+                    className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    Rides
+                  </Link>
+                  <Link 
+                    href="/about" 
+                    className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    About
+                  </Link>
+                  {!session && (
+                    <Link 
+                      href="/register" 
+                      className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+                    >
+                      Register
+                    </Link>
+                  )}
+                  {session && (
+                    <div className="flex items-center">
+                      <MessagesIcon />
+                    </div>
+                  )}
+                  <Login session={session} />
+                </div>
+              </div>
             </div>
           </nav>
           {children}
