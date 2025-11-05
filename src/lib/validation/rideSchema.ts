@@ -9,10 +9,11 @@ export const rideSchema = z.object({
   durationMin: z.number()
     .min(1, "Please enter a duration.")
     .max(1440, "Duration cannot exceed 24 hours (1440 minutes)."),
-  notes: z.string()
+  notes: z
+    .string()
     .max(5000, "Notes cannot exceed 5000 characters.")
-    .optional()
-    .transform(val => val?.trim() || undefined),
+    .trim()
+    .optional(),
 });
 
 export type RideFormData = z.infer<typeof rideSchema>;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MessageForm } from "./MessageForm";
 import Link from "next/link";
+import { useUser } from "@/app/context/UserContext";
 
 interface User {
   id: string;
@@ -63,27 +64,17 @@ interface Conversation {
 }
 
 export function MessagesClient() {
+  const { user } = useUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showNewMessageForm, setShowNewMessageForm] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  
+  const currentUserId = user?.id || null;
 
   useEffect(() => {
-    async function fetchCurrentUser() {
-      try {
-        const res = await fetch("/api/user");
-        if (res.ok) {
-          const user = await res.json();
-          setCurrentUserId(user.id);
-        }
-      } catch (error) {
-        console.error("Failed to fetch current user", error);
-      }
-    }
-    fetchCurrentUser();
     fetchConversations();
     fetchUsers();
   }, []);

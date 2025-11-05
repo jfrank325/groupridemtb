@@ -18,28 +18,14 @@ interface Message {
 }
 
 export const RideSummary = ({ ride }: { ride: Ride }) => {
-  const { session } = useUser();
+  const { session, user } = useUser();
   const [showMessageForm, setShowMessageForm] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isMessagesCollapsed, setIsMessagesCollapsed] = useState(false);
+  const [showAllMessages, setShowAllMessages] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-
-  useEffect(() => {
-    async function fetchCurrentUserId() {
-      if (session?.user?.email) {
-        try {
-          const res = await fetch("/api/user");
-          if (res.ok) {
-            const user = await res.json();
-            setCurrentUserId(user.id);
-          }
-        } catch (error) {
-          console.error("Failed to fetch current user", error);
-        }
-      }
-    }
-    fetchCurrentUserId();
-  }, [session]);
+  
+  const currentUserId = user?.id || null;
 
   useEffect(() => {
     async function fetchMessages() {
@@ -99,6 +85,7 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
   const isHost = currentUserId && ride.host && ride.host.id === currentUserId;
   // Show join button only if user is logged in, not the host, and hasn't joined
   const showJoinButton = session && currentUserId && !isHost && !hasJoined;
+  const visibleMessages = showAllMessages ? messages : messages.slice(-3);
 
   return (
     <>
@@ -143,77 +130,107 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
               </span>
             )}
           </p>
-          <div className="flex gap-2 flex-wrap">
-            {showJoinButton && (
+          {showJoinButton && (
+            <div className="flex gap-2 flex-wrap mb-4">
               <button 
                 className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium" 
                 onClick={() => joinRide()}
               >
                 Join Ride
               </button>
-            )}
-            {session && (
-              <button 
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium" 
-                onClick={() => setShowMessageForm(!showMessageForm)}
-              >
-                {showMessageForm ? "Cancel" : "Message About Ride"}
-              </button>
-            )}
-          </div>
+            </div>
+          )}
           {/* Messages Section */}
           {session && (
             <div className="mt-6 border-t border-gray-200 pt-6">
-              <h3 className="font-semibold mb-4 text-gray-900">Messages</h3>
-              {loadingMessages ? (
-                <div className="text-center py-4 text-gray-500">Loading messages...</div>
-              ) : messages.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">No messages yet. Start the conversation!</div>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
-                  {messages.map((message) => {
-                    const isSender = message.senderId === currentUserId;
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${isSender ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            isSender
-                              ? "bg-emerald-600 text-white"
-                              : "bg-gray-100 text-gray-900 border border-gray-200"
-                          }`}
-                        >
-                          <div className={`text-xs mb-1 ${isSender ? 'text-white opacity-90' : 'text-gray-600'}`}>
-                            {message.sender.name} • {new Date(message.createdAt).toLocaleString()}
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Messages</h3>
+                <div className="flex items-center gap-2">
+                  {messages.length > 0 && (
+                    <span className="text-xs text-gray-500">{messages.length} total</span>
+                  )}
+                </div>
+              </div>
+
+              {!isMessagesCollapsed && (
+                <div id={`ride-messages-${ride.id}`}>
+                  {loadingMessages ? (
+                    <div className="text-center py-4 text-gray-500">Loading messages...</div>
+                  ) : messages.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500">No messages yet. Start the conversation!</div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
+                      {visibleMessages.map((message) => {
+                        const isSender = message.senderId === currentUserId;
+                        return (
+                          <div
+                            key={message.id}
+                            className={`flex ${isSender ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[80%] rounded-lg p-3 ${
+                                isSender
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-gray-100 text-gray-900 border border-gray-200"
+                              }`}
+                            >
+                              <div className={`text-xs mb-1 ${isSender ? 'text-white opacity-90' : 'text-gray-600'}`}>
+                                {message.sender.name} • {new Date(message.createdAt).toLocaleString()}
+                              </div>
+                              <div className="break-words">{message.content}</div>
+                            </div>
                           </div>
-                          <div className="break-words">{message.content}</div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {messages.length > 3 && !loadingMessages && (
+                    <div className="mb-4">
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        onClick={() => setShowAllMessages(!showAllMessages)}
+                      >
+                        {showAllMessages ? "Show recent messages" : `Show older messages (${messages.length - 3})`}
+                      </button>
+                    </div>
+                  )}
+
+                  {showMessageForm && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">Send Message About This Ride</h4>
+                        <button
+                          type="button"
+                          className="text-sm text-gray-600 hover:text-gray-900 underline"
+                          onClick={() => setShowMessageForm(false)}
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    );
-                  })}
+                      <MessageForm
+                        recipientIds={getRecipientIds()}
+                        rideId={ride.id}
+                        label={`Ride: ${ride.name || "Untitled Ride"}`}
+                        onSent={handleMessageSent}
+                        placeholder="Ask a question or share information about this ride..."
+                      />
+                    </div>
+                  )}
+
+                  {!showMessageForm && (
+                    <button 
+                      className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium" 
+                      onClick={() => {
+                        setIsMessagesCollapsed(false);
+                        setShowMessageForm(true);
+                      }}
+                    >
+                      Add Message
+                    </button>
+                  )}
                 </div>
-              )}
-              {showMessageForm && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold mb-2">Send Message About This Ride</h4>
-                  <MessageForm
-                    recipientIds={getRecipientIds()}
-                    rideId={ride.id}
-                    label={`Ride: ${ride.name || "Untitled Ride"}`}
-                    onSent={handleMessageSent}
-                    placeholder="Ask a question or share information about this ride..."
-                  />
-                </div>
-              )}
-              {!showMessageForm && (
-                <button 
-                  className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium" 
-                  onClick={() => setShowMessageForm(true)}
-                >
-                  Add Message
-                </button>
               )}
             </div>
           )}

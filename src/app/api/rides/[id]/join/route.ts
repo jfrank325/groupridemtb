@@ -4,11 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { generalLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
 
-interface Params {
-  id: string;
-}
-
-export async function PUT(req: Request, { params }: { params: Params }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Rate limiting
     const identifier = getRateLimitIdentifier(req);
@@ -28,7 +24,8 @@ export async function PUT(req: Request, { params }: { params: Params }) {
       );
     }
 
-    const rideId = params.id;
+    const { id } = await params;
+    const rideId = id;
     if (!rideId) {
       return NextResponse.json({ error: "Missing rideId" }, { status: 400 });
     }

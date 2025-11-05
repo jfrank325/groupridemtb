@@ -40,10 +40,12 @@ export function TrailsTrailDetailClient({
   trailId,
   initialRides,
 }: TrailsTrailDetailClientProps) {
-  const { session } = useUser();
+  const { session, user } = useUser();
   const [rides, setRides] = useState<Ride[]>(initialRides);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const currentUserId = user?.id || null;
 
   const joinRide = async (rideId: string) => {
     if (!session) {
@@ -145,9 +147,9 @@ export function TrailsTrailDetailClient({
         <div className="space-y-4">
           {rides.map((ride) => {
             const isAttending = ride.attendees.some(
-              (a) => a.user.id === session?.user?.id
+              (a) => a.user.id === currentUserId
             );
-            const isHost = ride.host.id === session?.user?.id;
+            const isHost = ride.host.id === currentUserId;
 
             return (
               <div

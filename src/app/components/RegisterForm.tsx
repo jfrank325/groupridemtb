@@ -31,7 +31,7 @@ export default function RegisterForm() {
 
     // Password strength indicator
     const getPasswordStrength = (pwd: string) => {
-        if (!pwd) return { strength: 0, text: '' };
+        if (!pwd) return { strength: 0, text: '', color: '' };
         
         let strength = 0;
         if (pwd.length >= 8) strength++;

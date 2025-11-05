@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // GET all messages for a specific ride
 export async function GET(
   req: Request,
-  { params }: { params: { rideId: string } }
+  { params }: { params: Promise<{ rideId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { rideId } = params;
+    const { rideId } = await params;
 
     // Get all messages for this ride, ordered by most recent
     const messages = await prisma.message.findMany({

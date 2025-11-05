@@ -13,14 +13,13 @@ export default async function Home() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4">
-              Find Your Next
+              Your Next Ride
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
-                Mountain Bike Adventure
+                Starts with the Crew
               </span>
             </h1>
             <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              Connect with riders, discover trails, and join group rides in your area. 
-              Experience the thrill of mountain biking together.
+              Link up with local mountain bikers, join group rides, and discover trails together. Adventure’s better when it’s shared.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {!session ? (

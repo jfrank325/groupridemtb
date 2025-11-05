@@ -45,10 +45,11 @@ function decodePolyline(encoded: string): [number, number][] {
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const trailId = params.id;
+    const { id } = await params;
+    const trailId = id;
 
     // Get trail from database
     const trail = await prisma.trail.findUnique({

@@ -111,7 +111,7 @@ export async function GET() {
         });
       }
       const conv = conversationMap.get(key);
-      if (!conv.messages.find(m => m.id === message.id)) {
+      if (!conv.messages.find((m: typeof message) => m.id === message.id)) {
         conv.messages.push(message);
       }
       if (!conv.lastMessage || message.createdAt > conv.lastMessage.createdAt) {
@@ -147,7 +147,7 @@ export async function GET() {
         });
       }
       const conv = conversationMap.get(key);
-      if (!conv.messages.find(m => m.id === message.id)) {
+      if (!conv.messages.find((m: typeof message) => m.id === message.id)) {
         conv.messages.push(message);
       }
       

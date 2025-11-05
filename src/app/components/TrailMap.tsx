@@ -150,7 +150,7 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
             "Advanced", "#000",
             "#0070f3",
           ],
-          "line-width": 3,
+          "line-width": 2,
           "line-opacity": 1,
         },
       });
@@ -268,7 +268,7 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
       map.setPaintProperty("trail-lines", "line-width", [
         "case",
         ["==", ["get", "id"], highlightId],
-        6,
+        4,
         3,
       ]);
 
@@ -277,7 +277,7 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
         ["==", ["get", "id"], highlightId],
         1,
         ["!=", highlightId, ""],
-        0.3,
+        0.5,
         1,
       ]);
     } catch (error) {
