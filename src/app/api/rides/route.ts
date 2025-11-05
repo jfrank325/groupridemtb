@@ -1,49 +1,68 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { generalLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const rides = await prisma.ride.findMany({
-      where: {
-        date: {
-          gt: new Date(), // Only get rides in the future
+    // Rate limiting
+    const identifier = getRateLimitIdentifier(req);
+    const rateLimitResult = await checkRateLimit(generalLimiter, identifier);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { 
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": rateLimitResult.limit.toString(),
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": rateLimitResult.reset.toString(),
+          },
+        }
+      );
+    }
+
+    try {
+      const rides = await prisma.ride.findMany({
+        where: {
+          date: {
+            gt: new Date(), // Only get rides in the future
+          },
         },
-      },
-      orderBy: { date: "asc" },
-      include: {
-        trails: {
-          include: {
-            trail: {
-              include: {
-                trailSystem: true, // include trailSystem
+        orderBy: { date: "asc" },
+        include: {
+          trails: {
+            include: {
+              trail: {
+                include: {
+                  trailSystem: true, // include trailSystem
+                },
               },
             },
           },
+          host: true,
+          attendees: true,
         },
-        host: true,
-        attendees: true,
-      },
-    });
+      });
 
-    const withTrail = rides.map((ride) => ({
-      id: ride.id,
-      host: ride.host,
-      notes: ride.notes,
-      attendees: ride.attendees,
-      date: ride.date,
-      // Get trail info from the first trail for simplicity
-      trailId: ride.trails[0]?.trail.id,
-      trailName: ride.trails[0]?.trail.name,
-      trailSystem: ride.trails[0]?.trail.trailSystem?.name || "Unknown System",
-      lat: 33.8 + Math.random() * 0.3,
-      lng: -84.6 + Math.random() * 0.3,
-      difficulty: ride.trails[0]?.trail.difficulty || "Unknown",
-      distanceKm: ride.trails[0]?.trail.distanceKm || 0,
-    }));
-
-    return NextResponse.json(withTrail);
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to fetch rides" }, { status: 500 });
+      const response = NextResponse.json(rides);
+      response.headers.set("X-RateLimit-Limit", rateLimitResult.limit.toString());
+      response.headers.set("X-RateLimit-Remaining", rateLimitResult.remaining.toString());
+      response.headers.set("X-RateLimit-Reset", rateLimitResult.reset.toString());
+      
+      return response;
+    } catch (error) {
+      console.error("Error fetching rides:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch rides" },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error("[GET_RIDES]", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { type Trail } from "../hooks/useTrails";
 
@@ -10,11 +10,26 @@ interface TrailsListProps {
 
 export function TrailsList({ trails }: TrailsListProps) {
   const [filter, setFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const filteredTrails = trails.filter((trail) => {
-    if (filter === "all") return true;
-    return trail.difficulty?.toLowerCase() === filter.toLowerCase();
-  });
+  const filteredTrails = useMemo(() => {
+    return trails.filter((trail) => {
+      // Filter by difficulty
+      if (filter !== "all" && trail.difficulty?.toLowerCase() !== filter.toLowerCase()) {
+        return false;
+      }
+
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = trail.name?.toLowerCase().includes(query);
+        const matchesLocation = trail.location?.toLowerCase().includes(query);
+        return matchesName || matchesLocation;
+      }
+
+      return true;
+    });
+  }, [trails, filter, searchQuery]);
 
   const difficultyColors = {
     Easy: "bg-green-100 text-green-700 border-green-200",
@@ -24,10 +39,45 @@ export function TrailsList({ trails }: TrailsListProps) {
 
   return (
     <div className="w-full">
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Search trails by name or location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder:text-gray-500"
+          />
+        </div>
+      </div>
+
       {/* Filters */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">All Trails</h2>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+          All Trails
+          {filteredTrails.length !== trails.length && (
+            <span className="text-lg font-normal text-gray-600 ml-2">
+              ({filteredTrails.length} {filteredTrails.length === 1 ? 'trail' : 'trails'})
+            </span>
+          )}
+        </h2>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilter("all")}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
@@ -87,7 +137,12 @@ export function TrailsList({ trails }: TrailsListProps) {
               d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
             />
           </svg>
-          <p className="text-gray-700 text-lg">No trails found.</p>
+          <p className="text-gray-700 text-lg mb-2">No trails found.</p>
+          {(searchQuery || filter !== "all") && (
+            <p className="text-gray-500 text-sm">
+              Try adjusting your search or filters.
+            </p>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

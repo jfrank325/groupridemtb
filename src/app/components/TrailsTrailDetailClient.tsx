@@ -1,0 +1,244 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useUser } from "@/app/context/UserContext";
+
+interface Ride {
+  id: string;
+  date: string;
+  name: string | null;
+  notes: string | null;
+  host: {
+    id: string;
+    name: string;
+  };
+  attendees: Array<{
+    user: {
+      id: string;
+      name: string;
+    };
+  }>;
+  trails: Array<{
+    trail: {
+      id: string;
+      name: string;
+    };
+  }>;
+  userId?: string;
+  durationMin?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+interface TrailsTrailDetailClientProps {
+  trailId: string;
+  initialRides: Ride[];
+}
+
+export function TrailsTrailDetailClient({
+  trailId,
+  initialRides,
+}: TrailsTrailDetailClientProps) {
+  const { session } = useUser();
+  const [rides, setRides] = useState<Ride[]>(initialRides);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const joinRide = async (rideId: string) => {
+    if (!session) {
+      setError("Please log in to join rides");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/rides/${rideId}/join`, {
+        method: "PUT",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to join ride");
+      }
+
+      // Refresh rides list
+      const refreshRes = await fetch(`/api/rides/by-trail?trailId=${trailId}`);
+      if (refreshRes.ok) {
+        const data = await refreshRes.json();
+        const futureRides = data
+          .filter((ride: Ride) => new Date(ride.date) > new Date())
+          .sort(
+            (a: Ride, b: Ride) =>
+              new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+        setRides(futureRides);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to join ride");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 md:p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Upcoming Rides</h2>
+        {session && (
+          <Link
+            href={`/rides/new?trailId=${trailId}`}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          >
+            Create Ride
+          </Link>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
+
+      {rides.length === 0 ? (
+        <div className="text-center py-12">
+          <svg
+            className="w-16 h-16 mx-auto text-gray-300 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <p className="text-gray-700 text-lg mb-2">No upcoming rides scheduled</p>
+          {session && (
+            <Link
+              href={`/rides/new?trailId=${trailId}`}
+              className="text-emerald-600 hover:text-emerald-700 font-medium"
+            >
+              Be the first to create one!
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {rides.map((ride) => {
+            const isAttending = ride.attendees.some(
+              (a) => a.user.id === session?.user?.id
+            );
+            const isHost = ride.host.id === session?.user?.id;
+
+            return (
+              <div
+                key={ride.id}
+                className="border border-gray-200 rounded-lg p-6 hover:border-emerald-300 hover:shadow-md transition-all"
+              >
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                          {formatDate(ride.date)}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Hosted by {ride.host.name}
+                        </p>
+                      </div>
+                      {isHost && (
+                        <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">
+                          Your Ride
+                        </span>
+                      )}
+                      {isAttending && !isHost && (
+                        <span className="px-2.5 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">
+                          Attending
+                        </span>
+                      )}
+                    </div>
+
+                    {ride.notes && (
+                      <p className="text-gray-700 mb-4 whitespace-pre-line">
+                        {ride.notes}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        {ride.attendees.length + 1}{" "}
+                        {ride.attendees.length + 1 === 1
+                          ? "rider"
+                          : "riders"}
+                      </div>
+                      {ride.trails.length > 1 && (
+                        <div className="flex items-center">
+                          <svg
+                            className="w-4 h-4 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                            />
+                          </svg>
+                          {ride.trails.length} trails
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {session && !isHost && !isAttending && (
+                    <button
+                      onClick={() => joinRide(ride.id)}
+                      disabled={loading}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 whitespace-nowrap"
+                    >
+                      {loading ? "Joining..." : "Join Ride"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
