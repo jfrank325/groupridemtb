@@ -10,7 +10,7 @@ export default function About() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
                             About
                             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
-                                Group Ride MTB
+                                MTB Group Ride
                             </span>
                         </h1>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">

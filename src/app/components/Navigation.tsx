@@ -48,47 +48,47 @@ export function Navigation({ session }: NavigationProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="flex items-center space-x-2 group"
             onClick={closeMobileMenu}
           >
-            <svg 
-              className="w-8 h-8 text-emerald-600 group-hover:text-emerald-700 transition-colors" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              className="w-8 h-8 text-emerald-600 group-hover:text-emerald-700 transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              Group Ride MTB
+              MTB Group Ride
             </span>
           </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
-            <Link 
-              href="/trails" 
+            <Link
+              href="/trails"
               className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none  focus:text-emerald-600 focus:font-bold"
             >
               Trails
             </Link>
-            <Link 
-              href="/rides" 
+            <Link
+              href="/rides"
               className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none focus:text-emerald-600 focus:font-bold"
             >
               Rides
             </Link>
-            <Link 
-              href="/about" 
+            <Link
+              href="/about"
               className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none focus:text-emerald-600 focus:font-bold"
             >
               About
             </Link>
             {!session && (
-              <Link 
-                href="/register" 
+              <Link
+                href="/register"
                 className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none focus:text-emerald-600 focus:font-bold"
               >
                 Register
@@ -124,37 +124,37 @@ export function Navigation({ session }: NavigationProps) {
         {isMobileMenuOpen && (
           <>
             {/* Backdrop */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
               onClick={closeMobileMenu}
             />
             {/* Menu Panel */}
             <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50 md:hidden">
               <div className="flex flex-col py-4">
-                <Link 
-                  href="/trails" 
+                <Link
+                  href="/trails"
                   className="px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-emerald-600 transition-colors"
                   onClick={closeMobileMenu}
                 >
                   Trails
                 </Link>
-                <Link 
-                  href="/rides" 
+                <Link
+                  href="/rides"
                   className="px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-emerald-600 transition-colors"
                   onClick={closeMobileMenu}
                 >
                   Rides
                 </Link>
-                <Link 
-                  href="/about" 
+                <Link
+                  href="/about"
                   className="px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-emerald-600 transition-colors"
                   onClick={closeMobileMenu}
                 >
                   About
                 </Link>
                 {!session && (
-                  <Link 
-                    href="/register" 
+                  <Link
+                    href="/register"
                     className="px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-emerald-600 transition-colors"
                     onClick={closeMobileMenu}
                   >
@@ -163,8 +163,8 @@ export function Navigation({ session }: NavigationProps) {
                 )}
                 {session && (
                   <>
-                    <Link 
-                      href="/messages" 
+                    <Link
+                      href="/messages"
                       className="px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-emerald-600 transition-colors flex items-center gap-2 relative"
                       onClick={closeMobileMenu}
                     >
@@ -189,8 +189,8 @@ export function Navigation({ session }: NavigationProps) {
                         </span>
                       )}
                     </Link>
-                    <Link 
-                      href="/profile" 
+                    <Link
+                      href="/profile"
                       className="px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-emerald-600 transition-colors"
                       onClick={closeMobileMenu}
                     >
@@ -200,7 +200,7 @@ export function Navigation({ session }: NavigationProps) {
                 )}
                 {!session && (
                   <div className="px-4 py-3 border-t border-gray-200 mt-2">
-                    <button 
+                    <button
                       onClick={() => {
                         closeMobileMenu();
                         signIn();

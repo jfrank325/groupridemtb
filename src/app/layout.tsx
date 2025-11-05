@@ -22,7 +22,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Group Ride MTB",
+  title: "MTB Group Ride",
   description: "Find and join mountain bike group rides",
 };
 
