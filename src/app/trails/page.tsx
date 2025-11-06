@@ -1,6 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { TrailsList } from "../components/TrailsList";
 import { type Trail } from "../hooks/useTrails";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Mountain Bike Trails",
+  description: "Discover amazing mountain bike trails for every skill level. From beginner-friendly paths to challenging adventures. Find trails near you and join group rides.",
+  openGraph: {
+    title: "Mountain Bike Trails - MTB Group Ride",
+    description: "Discover amazing mountain bike trails for every skill level. Find trails near you and join group rides.",
+    type: "website",
+  },
+};
 
 export default async function Trails() {
     const trailsData = await prisma.trail.findMany({

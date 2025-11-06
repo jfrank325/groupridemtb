@@ -2,12 +2,47 @@ import { RidesAndTrailsServer } from "./components/RidesAndTrailsServer";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Home",
+  description: "Connect with local mountain bikers, join group rides, and discover amazing trails. Find your next adventure with fellow riders in your area.",
+  openGraph: {
+    title: "MTB Group Ride - Find and Join Mountain Bike Group Rides",
+    description: "Connect with local mountain bikers, join group rides, and discover amazing trails together.",
+    type: "website",
+  },
+};
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mtbgroupride.com';
+  
+  // Structured data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "MTB Group Ride",
+    "description": "Connect with local mountain bikers, join group rides, and discover amazing trails",
+    "url": siteUrl,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${siteUrl}/rides?search={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-b border-gray-200">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
@@ -55,5 +90,6 @@ export default async function Home() {
         <RidesAndTrailsServer />
       </section>
     </main>
+    </>
   );
 }

@@ -1,4 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About",
+  description: "Learn about MTB Group Ride - connecting mountain bikers with group rides and amazing trails. Join our community of passionate riders.",
+  openGraph: {
+    title: "About MTB Group Ride",
+    description: "Learn about MTB Group Ride - connecting mountain bikers with group rides and amazing trails.",
+    type: "website",
+  },
+};
 
 export default function About() {
     return (
