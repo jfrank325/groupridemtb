@@ -23,3 +23,49 @@ export function getDeterministicCoords(id: string): { lat: number; lng: number }
   };
 }
 
+/**
+ * Format distance in miles with appropriate unit
+ * Note: Values are already in miles (despite field name suggesting km)
+ * @param miles - Distance in miles (or null/undefined)
+ * @returns Formatted string (e.g., "0.5 miles" or "1.2 miles" or "N/A")
+ */
+export function formatDistance(miles: number | null | undefined): string {
+  if (!miles) return "N/A";
+  return miles < 1 
+    ? `${(miles * 5280).toFixed(0)} feet` 
+    : `${miles.toFixed(1)} miles`;
+}
+
+/**
+ * Format elevation in feet with appropriate unit
+ * Note: Values are already in feet (despite field name suggesting meters)
+ * @param feet - Elevation in feet (or null/undefined)
+ * @returns Formatted string (e.g., "150 feet" or "N/A")
+ */
+export function formatElevation(feet: number | null | undefined): string {
+  if (!feet) return "N/A";
+  return `${feet.toFixed(0)} feet`;
+}
+
+/**
+ * Format distance in miles (for display with separate unit label)
+ * Note: Values are already in miles (despite field name suggesting km)
+ * @param miles - Distance in miles (or null/undefined)
+ * @returns Formatted number string (e.g., "0.5" or "1.2")
+ */
+export function formatDistanceValue(miles: number | null | undefined): string {
+  if (!miles) return "0";
+  return miles.toFixed(1);
+}
+
+/**
+ * Format elevation in feet (for display with separate unit label)
+ * Note: Values are already in feet (despite field name suggesting meters)
+ * @param feet - Elevation in feet (or null/undefined)
+ * @returns Formatted number string (e.g., "150" or "500")
+ */
+export function formatElevationValue(feet: number | null | undefined): string {
+  if (!feet) return "0";
+  return feet.toFixed(0);
+}
+

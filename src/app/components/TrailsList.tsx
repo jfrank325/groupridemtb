@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { type Trail } from "../hooks/useTrails";
+import { formatDistanceValue, formatElevationValue } from "@/lib/utils";
 
 interface TrailsListProps {
   trails: Trail[];
@@ -184,15 +185,23 @@ export function TrailsList({ trails }: TrailsListProps) {
                   <div>
                     <p className="text-xs text-gray-600 mb-1">Distance</p>
                     <p className="text-sm font-semibold text-gray-900">
-                      {trail.distanceKm.toFixed(1)} km
+                      {formatDistanceValue(trail.distanceKm)} miles
                     </p>
                   </div>
                 )}
                 {trail.elevationGainM && (
                   <div>
-                    <p className="text-xs text-gray-600 mb-1">Elevation</p>
+                    <p className="text-xs text-gray-600 mb-1">Elevation Gain</p>
                     <p className="text-sm font-semibold text-gray-900">
-                      {trail.elevationGainM.toFixed(0)} m
+                      {formatElevationValue(trail.elevationGainM)} feet
+                    </p>
+                  </div>
+                )}
+                {trail.elevationLossM && (
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Elevation Loss</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {formatElevationValue(trail.elevationLossM)} feet
                     </p>
                   </div>
                 )}

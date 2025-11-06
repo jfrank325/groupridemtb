@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import TrailMapSingle from "@/app/components/TrailMapSingle";
+import TrailDetailMapAndCards from "@/app/components/TrailDetailMapAndCards";
 import { type Trail } from "../../hooks/useTrails";
 import { TrailsTrailDetailClient } from "@/app/components/TrailsTrailDetailClient";
+import { formatDistanceValue, formatElevationValue } from "@/lib/utils";
 
 interface TrailDetailPageProps {
   params: Promise<{ id: string }>;
@@ -80,6 +81,26 @@ export default async function TrailDetailPage({ params }: TrailDetailPageProps) 
     host: ride.host,
     attendees: ride.attendees,
     trails: ride.trails,
+  }));
+
+  // Fetch other trails at the same location
+  const relatedTrailsData = trail.location
+    ? await prisma.trail.findMany({
+        where: {
+          location: trail.location,
+          id: { not: id }, // Exclude the current trail
+        },
+        include: {
+          trailSystem: true,
+        },
+        orderBy: { name: "asc" },
+      })
+    : [];
+
+  const relatedTrails: Trail[] = relatedTrailsData.map((t) => ({
+    ...t,
+    coordinates: t.coordinates as unknown as Trail['coordinates'],
+    trailSystem: t.trailSystem || undefined,
   }));
 
   return (
@@ -165,18 +186,27 @@ export default async function TrailDetailPage({ params }: TrailDetailPageProps) 
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Distance</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {trail.distanceKm.toFixed(1)}
+                  {formatDistanceValue(trail.distanceKm)}
                 </p>
-                <p className="text-xs text-gray-500">kilometers</p>
+                <p className="text-xs text-gray-500">miles</p>
               </div>
             )}
             {trail.elevationGainM && (
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Elevation Gain</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {trail.elevationGainM.toFixed(0)}
+                  {formatElevationValue(trail.elevationGainM)}
                 </p>
-                <p className="text-xs text-gray-500">meters</p>
+                <p className="text-xs text-gray-500">feet</p>
+              </div>
+            )}
+            {trail.elevationLossM && (
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Elevation Loss</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatElevationValue(trail.elevationLossM)}
+                </p>
+                <p className="text-xs text-gray-500">feet</p>
               </div>
             )}
             {trail.distanceKm && trail.elevationGainM && (
@@ -191,23 +221,23 @@ export default async function TrailDetailPage({ params }: TrailDetailPageProps) 
                 <p className="text-xs text-gray-500">percent</p>
               </div>
             )}
-                         {transformedRides.length > 0 && (
-               <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                 <p className="text-sm text-emerald-700 mb-1">Upcoming Rides</p>
-                 <p className="text-2xl font-bold text-emerald-900">
-                   {transformedRides.length}
-                 </p>
-                 <p className="text-xs text-emerald-600">scheduled</p>
-               </div>
-             )}
+            {transformedRides.length > 0 && (
+              <div className="text-center p-4 bg-emerald-50 rounded-lg">
+                <p className="text-sm text-emerald-700 mb-1">Upcoming Rides</p>
+                <p className="text-2xl font-bold text-emerald-900">
+                  {transformedRides.length}
+                </p>
+                <p className="text-xs text-emerald-600">scheduled</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Map Section */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Trail Location</h2>
-          <TrailMapSingle trail={trail} />
-        </div>
+        {/* Map and Related Trails Section */}
+        <TrailDetailMapAndCards
+          currentTrail={trail}
+          relatedTrails={relatedTrails}
+        />
 
         {/* Description Section */}
         {trail.description && (

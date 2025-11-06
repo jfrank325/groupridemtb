@@ -3,6 +3,7 @@ import maplibregl from "maplibre-gl";
 import { Trail } from "../hooks/useTrails";
 import Link from "next/link";
 import { useUser } from "@/app/context/UserContext";
+import { formatDistance, formatElevation } from "@/lib/utils";
 
 interface TrailPopupProps {
     trail: Partial<Trail>;
@@ -78,15 +79,6 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
         }
     };
 
-    const formatDistance = (km: number | null | undefined) => {
-        if (!km) return "N/A";
-        return km < 1 ? `${(km * 1000).toFixed(0)}m` : `${km.toFixed(1)}km`;
-    };
-
-    const formatElevation = (m: number | null | undefined) => {
-        if (!m) return "N/A";
-        return `${m.toFixed(0)}m`;
-    };
 
     return (
         <div 
@@ -100,9 +92,22 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
             aria-labelledby="trail-popup-title"
         >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between z-10">
-                <h2 id="trail-popup-title" className="text-xl font-bold text-gray-900 pr-4">
-                    {trail.name || "Trail Details"}
-                </h2>
+                <div className="flex-1 pr-4">
+                    <h2 id="trail-popup-title" className="text-xl font-bold text-gray-900 mb-2">
+                        {trail.name || "Trail Details"}
+                    </h2>
+                    {trail.id && (
+                        <Link
+                            href={`/trails/${trail.id}`}
+                            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded"
+                        >
+                            View full trail details
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+                    )}
+                </div>
                 <button
                     onClick={onClose}
                     className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded p-1 transition-colors"
@@ -141,7 +146,7 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                     </div>
 
                     {/* Stats Grid */}
-                    {(trail.distanceKm || trail.elevationGainM) && (
+                    {(trail.distanceKm || trail.elevationGainM || trail.elevationLossM) && (
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                             {trail.distanceKm && (
                                 <div>
@@ -153,6 +158,12 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                                 <div>
                                     <p className="text-xs text-gray-500 mb-1">Elevation Gain</p>
                                     <p className="text-lg font-semibold text-gray-900">{formatElevation(trail.elevationGainM)}</p>
+                                </div>
+                            )}
+                            {trail.elevationLossM && (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Elevation Loss</p>
+                                    <p className="text-lg font-semibold text-gray-900">{formatElevation(trail.elevationLossM)}</p>
                                 </div>
                             )}
                         </div>

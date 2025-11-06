@@ -48,6 +48,7 @@ model Trail {
   difficulty     String?
   distanceKm     Float?
   elevationGainM Float?
+  elevationLossM Float?
   description    String?
   trailSystemId  String?
   lat            Float?

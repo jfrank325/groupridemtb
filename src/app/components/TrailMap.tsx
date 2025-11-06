@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { type Trail } from "../hooks/useTrails";
 import TrailPopup from "./TrailPopup";
+import TrailHoverPopup from "./TrailHoverPopup";
 
 interface TrailMapProps {
   trails: Trail[];
@@ -18,9 +19,13 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
   const [selectedTrail, setSelectedTrail] = useState<Partial<Trail> | null>(null);
+  const [hoveredTrail, setHoveredTrail] = useState<Trail | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [trailCoordinates, setTrailCoordinates] = useState<Map<string, [number, number][]>>(new Map());
   const [loadingCoordinates, setLoadingCoordinates] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep the ref updated with the latest callback
   useEffect(() => {
@@ -175,19 +180,65 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
       map.on("mouseenter", "trail-lines", (e) => {
         map.getCanvas().style.cursor = "pointer";
         const feature = e.features?.[0];
-        if (feature && onTrailHoverRef.current) {
+        if (feature) {
           const trailId = feature.properties?.id;
-          if (trailId) {
+          if (trailId && onTrailHoverRef.current) {
             onTrailHoverRef.current(trailId);
           }
+          
+          // Clear any existing hide timeout
+          if (hideTimeoutRef.current) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+          }
+          
+          // Find the full trail object and set hover state with delay
+          const trail = trails.find(t => t.id === trailId);
+          if (trail) {
+            // Clear any existing show timeout
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            
+            // Show popup after a short delay (300ms)
+            hoverTimeoutRef.current = setTimeout(() => {
+              setHoverPosition({
+                x: e.point.x,
+                y: e.point.y,
+              });
+              setHoveredTrail(trail);
+            }, 100);
+          }
+        }
+      });
+      
+      map.on("mousemove", "trail-lines", (e) => {
+        // Update hover position as mouse moves
+        if (hoveredTrail) {
+          setHoverPosition({
+            x: e.point.x,
+            y: e.point.y,
+          });
         }
       });
       
       map.on("mouseleave", "trail-lines", () => {
         map.getCanvas().style.cursor = "";
-        if (onTrailHoverRef.current) {
-          onTrailHoverRef.current(null);
+        
+        // Clear any pending show timeout
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+          hoverTimeoutRef.current = null;
         }
+        
+        // Hide popup after a short delay (200ms) to allow moving mouse to popup
+        hideTimeoutRef.current = setTimeout(() => {
+          setHoveredTrail(null);
+          setHoverPosition(null);
+          if (onTrailHoverRef.current) {
+            onTrailHoverRef.current(null);
+          }
+        }, 200);
       });
 
       setIsMapLoaded(true);
@@ -199,6 +250,15 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
         mapRef.current = null;
       }
       setIsMapLoaded(false);
+      // Clean up timeouts
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
     };
   }, [trails, maptilerKey]);
 
@@ -285,9 +345,63 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
     }
   }, [highlightedTrailId, isMapLoaded]);
 
+  const handleShowMore = (trail: Trail) => {
+    // Clear any pending timeouts
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setHoveredTrail(null);
+    setHoverPosition(null);
+    setSelectedTrail(trail);
+  };
+
+  const handleHoverPopupMouseEnter = () => {
+    // Cancel hide timeout when mouse enters the popup
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  };
+
+  const handleHoverPopupMouseLeave = () => {
+    // Hide popup after a short delay when mouse leaves
+    hideTimeoutRef.current = setTimeout(() => {
+      setHoveredTrail(null);
+      setHoverPosition(null);
+      if (onTrailHoverRef.current) {
+        onTrailHoverRef.current(null);
+      }
+    }, 200);
+  };
+
   return (
     <div className="relative w-full h-[600px] rounded-xl shadow-md">
       <div ref={mapContainer} className="w-full h-full" />
+      {hoveredTrail && hoverPosition && (
+        <div
+          className="absolute z-20 pointer-events-none"
+          style={{
+            left: `${hoverPosition.x}px`,
+            top: `${hoverPosition.y}px`,
+            transform: 'translate(-50%, -100%)',
+            marginTop: '-8px',
+          }}
+        >
+          <div className="pointer-events-auto">
+            <TrailHoverPopup
+              trail={hoveredTrail}
+              onShowMore={() => handleShowMore(hoveredTrail)}
+              onMouseEnter={handleHoverPopupMouseEnter}
+              onMouseLeave={handleHoverPopupMouseLeave}
+            />
+          </div>
+        </div>
+      )}
       {selectedTrail && (
         <TrailPopup
           trail={selectedTrail}

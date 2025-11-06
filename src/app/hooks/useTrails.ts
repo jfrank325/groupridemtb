@@ -12,6 +12,7 @@ export type Trail = {
   difficulty: string | null;
   distanceKm: number | null;
   elevationGainM: number | null;
+  elevationLossM: number | null;
   description: string | null;
   trailSystemId: string | null;
   lat: number | null;
