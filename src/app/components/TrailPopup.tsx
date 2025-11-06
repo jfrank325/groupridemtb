@@ -3,7 +3,7 @@ import maplibregl from "maplibre-gl";
 import { Trail } from "../hooks/useTrails";
 import Link from "next/link";
 import { useUser } from "@/app/context/UserContext";
-import { formatDistance, formatElevation } from "@/lib/utils";
+import { formatDistance, formatElevation, formatDate } from "@/lib/utils";
 
 interface TrailPopupProps {
     trail: Partial<Trail>;
@@ -200,14 +200,7 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                                                     {ride.name || "Group Ride"}
                                                 </p>
                                                 <p className="text-sm text-gray-600 mt-1">
-                                                    {new Date(ride.date).toLocaleDateString('en-US', {
-                                                        weekday: 'long',
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric',
-                                                        hour: 'numeric',
-                                                        minute: '2-digit'
-                                                    })}
+                                                    {formatDate(ride.date, { includeWeekday: true, includeTime: true, hour12: true })}
                                                 </p>
                                                 {ride.host && (
                                                     <p className="text-xs text-gray-500 mt-1">

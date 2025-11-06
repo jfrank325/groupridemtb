@@ -1,10 +1,23 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { RidesList } from "./RidesList";
-import TrailMap from "./TrailMap";
 import { type Ride } from "../hooks/useRides";
 import { type Trail } from "../hooks/useTrails";
+
+// Dynamically import TrailMap to reduce initial bundle size
+const TrailMap = dynamic(() => import("./TrailMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[600px] rounded-xl shadow-md bg-gray-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mb-2"></div>
+        <p className="text-gray-600">Loading map...</p>
+      </div>
+    </div>
+  ),
+});
 
 interface RidesAndTrailsClientProps {
   rides: Ride[];

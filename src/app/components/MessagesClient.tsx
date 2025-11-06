@@ -234,7 +234,7 @@ export function MessagesClient() {
                       )}
                       <p className="text-xs text-gray-600 mt-1">
                         {conversation.lastMessage
-                          ? new Date(conversation.lastMessage.createdAt).toLocaleDateString()
+                          ? formatDateShort(conversation.lastMessage.createdAt)
                           : ""}
                       </p>
                     </div>
@@ -294,7 +294,7 @@ export function MessagesClient() {
                         }`}
                       >
                         <div className={`text-xs mb-1 ${isSender ? 'text-white opacity-90' : 'text-gray-600'}`}>
-                          {message.sender.name} • {new Date(message.createdAt).toLocaleString()}
+                          {message.sender.name} • {formatDate(message.createdAt, { includeTime: true, hour12: true })}
                         </div>
                         <div>{message.content}</div>
                       </div>

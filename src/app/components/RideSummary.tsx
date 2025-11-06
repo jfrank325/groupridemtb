@@ -93,15 +93,7 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
         <div className="p-4 text-gray-700">
           <h2 className="text-2xl font-semibold mb-4 text-gray-900">{ride.name || "Untitled Ride"}</h2>
           <p className="mb-2">
-            {new Date(ride.date).toLocaleDateString('en-us', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })} @ {new Date(ride.date).toLocaleTimeString('en-us', { 
-              timeStyle: 'short', 
-              hour12: true 
-            })}
+            {formatDate(ride.date, { includeWeekday: true })} @ {formatTime(ride.date)}
           </p>
           {ride.host && (
             <p className="mb-2">
@@ -175,7 +167,7 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
                               }`}
                             >
                               <div className={`text-xs mb-1 ${isSender ? 'text-white opacity-90' : 'text-gray-600'}`}>
-                                {message.sender.name} • {new Date(message.createdAt).toLocaleString()}
+                                {message.sender.name} • {formatDate(message.createdAt, { includeTime: true, hour12: true })}
                               </div>
                               <div className="break-words">{message.content}</div>
                             </div>

@@ -1,9 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { type Trail } from "../hooks/useTrails";
-import TrailMapSingle from "./TrailMapSingle";
 import RelatedTrailsSection from "./RelatedTrailsSection";
+
+// Dynamically import TrailMapSingle to reduce initial bundle size
+const TrailMapSingle = dynamic(() => import("./TrailMapSingle"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] rounded-xl shadow-md bg-gray-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mb-2"></div>
+        <p className="text-gray-600">Loading map...</p>
+      </div>
+    </div>
+  ),
+});
 
 interface TrailDetailMapAndCardsProps {
   currentTrail: Trail & { trailSystem?: { name: string } };

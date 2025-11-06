@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/app/context/UserContext";
+import { formatDate } from "@/lib/utils";
 
 interface Ride {
   id: string;
@@ -86,17 +87,6 @@ export function TrailsTrailDetailClient({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 md:p-8">
@@ -161,7 +151,7 @@ export function TrailsTrailDetailClient({
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                          {formatDate(ride.date)}
+                          {formatDate(ride.date, { includeWeekday: true, includeTime: true, hour12: true })}
                         </h3>
                         <p className="text-sm text-gray-600">
                           Hosted by {ride.host.name}

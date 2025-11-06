@@ -69,3 +69,105 @@ export function formatElevationValue(feet: number | null | undefined): string {
   return feet.toFixed(0);
 }
 
+/**
+ * Format date consistently to avoid hydration mismatches
+ * Uses a deterministic format that's the same on server and client
+ * @param date - Date string or Date object
+ * @param options - Formatting options
+ * @returns Formatted date string
+ */
+export function formatDate(
+  date: string | Date,
+  options: {
+    includeTime?: boolean;
+    includeWeekday?: boolean;
+    timeStyle?: "short" | "medium" | "long";
+    hour12?: boolean;
+  } = {}
+): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  
+  // Use UTC to ensure consistency between server and client
+  const year = dateObj.getUTCFullYear();
+  const month = dateObj.getUTCMonth();
+  const day = dateObj.getUTCDate();
+  const hours = dateObj.getUTCHours();
+  const minutes = dateObj.getUTCMinutes();
+  
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const weekdayNames = [
+    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+  ];
+  
+  let formatted = "";
+  
+  if (options.includeWeekday) {
+    formatted += `${weekdayNames[dateObj.getUTCDay()]}, `;
+  }
+  
+  formatted += `${monthNames[month]} ${day}, ${year}`;
+  
+  if (options.includeTime) {
+    let hour = hours;
+    const ampm = options.hour12 ? (hour >= 12 ? "PM" : "AM") : null;
+    
+    if (options.hour12) {
+      hour = hour % 12;
+      if (hour === 0) hour = 12;
+    }
+    
+    const minutesStr = minutes.toString().padStart(2, "0");
+    const timeStr = options.hour12 
+      ? `${hour}:${minutesStr} ${ampm}`
+      : `${hour.toString().padStart(2, "0")}:${minutesStr}`;
+    
+    formatted += ` at ${timeStr}`;
+  }
+  
+  return formatted;
+}
+
+/**
+ * Format date for display in lists (shorter format)
+ * @param date - Date string or Date object
+ * @returns Formatted date string (e.g., "Jan 15, 2024")
+ */
+export function formatDateShort(date: string | Date): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  const year = dateObj.getUTCFullYear();
+  const month = dateObj.getUTCMonth();
+  const day = dateObj.getUTCDate();
+  
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+  
+  return `${monthNames[month]} ${day}, ${year}`;
+}
+
+/**
+ * Format time for display
+ * @param date - Date string or Date object
+ * @param hour12 - Whether to use 12-hour format
+ * @returns Formatted time string
+ */
+export function formatTime(date: string | Date, hour12: boolean = true): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  let hour = dateObj.getUTCHours();
+  const minutes = dateObj.getUTCMinutes();
+  
+  if (hour12) {
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  }
+  
+  return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+}
+
