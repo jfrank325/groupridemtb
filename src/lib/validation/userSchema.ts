@@ -11,10 +11,10 @@ const passwordSchema = z
   .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
 
 export const userSchema = z.object({
-  name: z.string().min(2).max(100).trim().nonempty("Please enter your name."),
-  email: z.string().email("Please enter a valid email address.").toLowerCase().trim(),
-  passwordHash: passwordSchema.nonempty("Please enter a password."),
-  zip: z.string().min(5).max(5).optional(),
+  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters").trim(),
+  email: z.string().email("Please enter a valid email address").toLowerCase().trim(),
+  password: passwordSchema,
+  zip: z.string().regex(/^\d{5}$/, "Zip code must be 5 digits").optional().or(z.literal("")),
 });
 
 export type UserFormData = z.infer<typeof userSchema>;

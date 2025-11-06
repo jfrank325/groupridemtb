@@ -1,15 +1,15 @@
-// app/actions/createRide.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
 import { userSchema } from "@/lib/validation/userSchema";
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 
 export async function createUser(formData: FormData) {
   const raw = {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
-    passwordHash: formData.get("passwordHash") as string,
+    password: formData.get("password") as string,
     zip: formData.get("zip") as string | null,
   };
 
@@ -18,15 +18,32 @@ export async function createUser(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  const user = await prisma.user.create({
-    data: {
-      name: parsed.data.name,
-      email: parsed.data.email,
-      passwordHash: parsed.data.passwordHash,
-      zip: parsed.data.zip ? +parsed.data.zip :  null,
-    },
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
   });
 
-  revalidatePath("/users");
-  return { success: true, user };
+  if (existingUser) {
+    return { error: { email: ["An account with this email already exists"] } };
+  }
+
+  // Hash password server-side (security best practice)
+  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        name: parsed.data.name,
+        email: parsed.data.email,
+        passwordHash,
+        zip: parsed.data.zip ? +parsed.data.zip : null,
+      },
+    });
+
+    revalidatePath("/users");
+    return { success: true, user };
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return { error: { _form: ["Failed to create account. Please try again."] } };
+  }
 }
