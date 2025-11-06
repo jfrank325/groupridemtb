@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { getDeterministicCoords } from "@/lib/utils";
 import { RidesList } from "../components/RidesList";
 import LogoutButton from "../components/LogoutButton";
 import { redirect } from "next/navigation";
@@ -54,8 +55,7 @@ export default async function ProfilePage() {
             trailSystems,
             difficulties,
             totalDistanceKm,
-            lat: 33.8 + Math.random() * 0.3,
-            lng: -84.6 + Math.random() * 0.3,
+            ...getDeterministicCoords(ride.id),
         }
     });
 
