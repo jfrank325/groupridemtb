@@ -5,7 +5,7 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: "MTB Group Ride - Find and Join Mountain Bike Group Rides",
   description: "Connect with local mountain bikers, join group rides, and discover amazing trails. Find your next adventure with fellow riders in your area.",
   openGraph: {
     title: "MTB Group Ride - Find and Join Mountain Bike Group Rides",
