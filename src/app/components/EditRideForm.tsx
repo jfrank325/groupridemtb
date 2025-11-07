@@ -118,6 +118,10 @@ export function EditRideForm({ ride, trails }: EditRideFormProps) {
         .filter((id): id is string => Boolean(id))
     );
 
+    if (allowedTrailIds.size === 0) {
+      return;
+    }
+
     const filteredTrailIds = selectedTrailIds.filter((id) => allowedTrailIds.has(id));
 
     if (filteredTrailIds.length !== selectedTrailIds.length) {
@@ -243,24 +247,24 @@ export function EditRideForm({ ride, trails }: EditRideFormProps) {
         </div>
 
         <div>
-          <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
-            Trail System / Location
-          </label>
-          <select
-            id="location"
-            {...register('location')}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-          >
-            <option value="">Select a location</option>
-            {locationOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <p className="mt-2 text-xs text-gray-500">
-            Update the location or keep it as-is. You can also choose specific trails below.
-          </p>
+        <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
+          Trail System / Location
+        </label>
+        <input
+          id="location"
+          list="edit-location-options"
+          placeholder="Select or enter a location"
+          {...register('location')}
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+        />
+        <datalist id="edit-location-options">
+          {locationOptions.map((option) => (
+            <option key={option} value={option} />
+          ))}
+        </datalist>
+        <p className="mt-2 text-xs text-gray-500">
+          Update the location or keep it as-is. Type a custom place if it isn&apos;t listed, then adjust trails below if needed.
+        </p>
           {locationValue && (
             <p className="mt-1 text-xs font-medium text-emerald-600">Location set to: {locationValue}</p>
           )}

@@ -217,6 +217,10 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
         .filter((id): id is string => Boolean(id))
     );
 
+    if (allowedTrailIds.size === 0) {
+      return;
+    }
+
     const filteredTrailIds = selectedTrailIds.filter((id) => allowedTrailIds.has(id));
 
     if (filteredTrailIds.length !== selectedTrailIds.length) {
@@ -280,20 +284,20 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
         <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
           Trail System / Location
         </label>
-        <select
+        <input
           id="location"
+          list="location-options"
+          placeholder="Select or enter a location"
           {...register('location')}
           className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-        >
-          <option value="">Select a location</option>
+        />
+        <datalist id="location-options">
           {locationOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
+            <option key={option} value={option} />
           ))}
-        </select>
+        </datalist>
         <p className="mt-2 text-xs text-gray-500">
-          Pick the location first. You can optionally choose specific trails within that system below.
+          Pick from known locations or type a custom spot if it isn&apos;t listed. You can optionally choose specific trails within that system below.
         </p>
         {locationValue && (
           <p className="mt-1 text-xs font-medium text-emerald-600">
