@@ -16,7 +16,10 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   const authMessageKey = searchParams.get("authMessage");
-  const callbackUrl = searchParams.get("callbackUrl") || "/profile";
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = rawCallbackUrl && rawCallbackUrl.length > 0 ? rawCallbackUrl : "/profile";
+  const isCreateRideFlow = authMessageKey === "create-ride";
+  const postLoginDestination = isCreateRideFlow ? callbackUrl : "/profile";
 
   const authBanner = useMemo(() => {
     if (!authMessageKey) return null;
@@ -38,7 +41,7 @@ export default function LoginForm() {
       redirect: false,
       email,
       password,
-      callbackUrl,
+      callbackUrl: postLoginDestination,
     });
 
     setLoading(false);
@@ -47,7 +50,7 @@ export default function LoginForm() {
       setError(res.error);
     } else if (res?.ok) {
       // Redirect to the intended destination (fallback to profile)
-      router.replace(callbackUrl);
+      router.replace(postLoginDestination);
       router.refresh(); // Refresh to update server components
     }
   }

@@ -7,6 +7,7 @@ import LogoutButton from "../components/LogoutButton";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { MessagesLink } from "../components/MessagesLink";
+import { Prisma } from "@prisma/client";
 
 export default async function ProfilePage() {
     const session = await getServerSession(authOptions);
@@ -18,7 +19,6 @@ export default async function ProfilePage() {
     const fullUser = await prisma.user.findUnique({
         where: { email: session?.user?.email || undefined },
         include: {
-            // The rides the user is attending
             rides: {
                 include: {
                     ride: {
@@ -30,15 +30,44 @@ export default async function ProfilePage() {
                     },
                 },
             },
-            // Favorite trails
+            hostRides: {
+                include: {
+                    host: { select: { id: true, name: true } },
+                    attendees: { include: { user: true } },
+                    trails: { include: { trail: { include: { trailSystem: true } } } },
+                },
+            },
             favoriteTrails: true,
         },
     });
 
+    if (!fullUser) {
+        redirect("/login");
+    }
+
     const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
 
-    const rides = fullUser?.rides?.map((r) => {
-        const ride = r.ride;
+    type RideWithRelations = Prisma.RideGetPayload<{
+        include: {
+            host: { select: { id: true; name: true } };
+            attendees: { include: { user: true } };
+            trails: { include: { trail: { include: { trailSystem: true } } } };
+        };
+    }>;
+
+    type RideAttendeeWithRide = Prisma.RideAttendeeGetPayload<{
+        include: {
+            ride: {
+                include: {
+                    host: { select: { id: true; name: true } };
+                    attendees: { include: { user: true } };
+                    trails: { include: { trail: { include: { trailSystem: true } } } };
+                };
+            };
+        };
+    }>;
+
+    const normalizeRide = (ride: RideWithRelations, role: "host" | "attendee") => {
         const rideTrails = ride.trails.map((rt) => rt.trail);
         const trailIds = rideTrails.map((t) => t.id);
         const trailNames = rideTrails.map((t) => t.name);
@@ -50,6 +79,7 @@ export default async function ProfilePage() {
             id: ride.id,
             name: ride.name,
             location,
+            role,
             recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
             host: ride.host ? { id: ride.host.id, name: ride.host.name } : undefined,
             notes: ride.notes,
@@ -63,8 +93,13 @@ export default async function ProfilePage() {
             difficulties,
             totalDistanceKm,
             ...getDeterministicCoords(ride.id),
-        }
-    });
+        };
+    };
+
+    const hostedRides = (fullUser.hostRides ?? []).map((ride) => normalizeRide(ride as RideWithRelations, "host"));
+    const attendingRides = (fullUser.rides ?? []).map((wrapper: RideAttendeeWithRide) =>
+        normalizeRide(wrapper.ride, "attendee")
+    );
 
     return (
         <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
@@ -122,10 +157,16 @@ export default async function ProfilePage() {
                     </div>
 
                     {/* Rides Section */}
-                    <div className="lg:col-span-2">
-                        {rides && rides.length > 0 ? (
-                            <RidesList title="Your Rides" rides={rides} />
-                        ) : (
+                    <div className="lg:col-span-2 space-y-12">
+                        {hostedRides.length > 0 && (
+                            <RidesList title="Rides You're Hosting" rides={hostedRides} />
+                        )}
+
+                        {attendingRides.length > 0 && (
+                            <RidesList title="Rides You're Attending" rides={attendingRides} />
+                        )}
+
+                        {hostedRides.length === 0 && attendingRides.length === 0 && (
                             <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                                 <svg 
                                     className="w-16 h-16 mx-auto text-gray-300 mb-4" 
@@ -136,7 +177,7 @@ export default async function ProfilePage() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No rides yet</h3>
-                                <p className="text-gray-500 mb-4">You haven't joined any rides yet.</p>
+                                <p className="text-gray-500 mb-4">You haven't hosted or joined any rides yet.</p>
                                 <Link
                                     href="/rides"
                                     className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-xl"
