@@ -40,7 +40,6 @@ export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] 
             ) : (
                 <div className="space-y-4">
                     {rides.map((ride) => {
-                        console.log(ride);
                         const isHighlighted = highlightedRideIds.includes(ride.id);
                         return (
                             <div

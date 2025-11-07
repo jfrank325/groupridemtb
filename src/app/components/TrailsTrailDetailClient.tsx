@@ -109,7 +109,7 @@ export function TrailsTrailDetailClient({
               d="M12 4v16m8-8H4"
             />
           </svg>
-          {session ? "Create Ride" : "Log in to Create a Ride"}
+          "Create Ride"
         </Link>
       </div>
 

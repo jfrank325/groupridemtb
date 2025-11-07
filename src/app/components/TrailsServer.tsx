@@ -24,7 +24,6 @@ export const TrailsServer = async () => {
         trailSystem: true,
       },
     });
-    console.log({ trailsData })
     // Cast/map the Prisma JsonValue coordinates to the application's Trail type so the prop matches.
     const trails: Trail[] = trailsData.map((t) => {
       // Type assertion: elevationLossM exists in the schema and Prisma client
