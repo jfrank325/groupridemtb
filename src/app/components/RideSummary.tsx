@@ -4,6 +4,7 @@ import { type Ride } from "../hooks/useRides";
 import { MessageForm } from "./MessageForm";
 import { useUser } from "../context/UserContext";
 import { useState, useEffect } from "react";
+import { formatDate, formatTime } from "@/lib/utils";
 
 interface Message {
   id: string;

@@ -184,7 +184,7 @@ export function Navigation({ session }: NavigationProps) {
                       </svg>
                       <span>Messages</span>
                       {unreadCount > 0 && (
-                        <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center" suppressHydrationWarning>
                           {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                       )}

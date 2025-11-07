@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MessageForm } from "./MessageForm";
 import Link from "next/link";
 import { useUser } from "@/app/context/UserContext";
+import { formatDate, formatDateShort } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -239,7 +240,7 @@ export function MessagesClient() {
                       </p>
                     </div>
                     {conversation.unreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2">
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2" suppressHydrationWarning>
                         {conversation.unreadCount > 9 ? "9+" : conversation.unreadCount}
                       </span>
                     )}

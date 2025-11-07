@@ -15,6 +15,10 @@ export type Trail = {
   elevationLossM: number | null;
   description: string | null;
   trailSystemId: string | null;
+  trailSystem?: {
+    id?: string | null;
+    name: string | null;
+  } | null;
   lat: number | null;
   lng: number | null;
   coordinates: Geometry | Number[][] | null;
