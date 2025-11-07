@@ -65,7 +65,7 @@ export async function createRide(formData: FormData) {
     trailIds: formData.getAll("trailIds") as string[],
     location: normalizedLocation,
     time: formData.get("time") as string,
-    recurrence: normalizedRecurrence,
+    recurrence: normalizedRecurrence ?? "none",
   };
 
   const parsed = rideSchema.safeParse(raw);
@@ -98,20 +98,6 @@ export async function createRide(formData: FormData) {
     sanitizedLocation = cleaned.length > 0 ? cleaned.slice(0, 255) : null;
   }
 
-  const recurrenceLabels: Record<string, string> = {
-    daily: "Daily",
-    weekly: "Weekly",
-    monthly: "Monthly",
-    yearly: "Yearly",
-  };
-
-  if (parsed.data.recurrence) {
-    const recurrenceNote = `Recurrence: ${recurrenceLabels[parsed.data.recurrence]}`;
-    sanitizedNotes = sanitizedNotes
-      ? `${sanitizedNotes}\n\n${recurrenceNote}`
-      : recurrenceNote;
-  }
-
   const ride = await prisma.ride.create({
     data: {
       userId: user.id, // Use actual user ID from session
@@ -120,6 +106,7 @@ export async function createRide(formData: FormData) {
       durationMin: parsed.data.durationMin,
       notes: sanitizedNotes, // Sanitized
       location: sanitizedLocation,
+      recurrence: parsed.data.recurrence,
       trails: trailIds.length
         ? {
             create: trailIds.map((id: string) => ({ trailId: id })),

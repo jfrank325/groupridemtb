@@ -23,7 +23,7 @@ export const rideSchema = z
       .enum(["none", "daily", "weekly", "monthly", "yearly"], {
         required_error: "Select a recurrence option.",
       })
-      .optional(),
+      .default("none"),
     date: z.string().min(1, "Please choose a date."),
     durationMin: z
       .number()
@@ -54,4 +54,4 @@ export const rideSchema = z
     }
   });
 
-export type RideFormData = z.infer<typeof rideSchema>;
+export type RideFormData = z.input<typeof rideSchema>;

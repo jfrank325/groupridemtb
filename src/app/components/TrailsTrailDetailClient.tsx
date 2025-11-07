@@ -31,6 +31,7 @@ interface Ride {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   location?: string | null;
+  recurrence?: string | null;
 }
 
 interface TrailsTrailDetailClientProps {

@@ -8,6 +8,7 @@ export type Ride = {
   notes: string | null;
   name: string | null;
   location: string | null;
+  recurrence: string | null;
   createdAt: string;
   isExample: boolean;
   trailIds: string[];

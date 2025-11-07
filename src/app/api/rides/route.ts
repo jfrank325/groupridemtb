@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generalLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
-import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords } from "@/lib/utils";
+import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords, getNextRecurringDate, Recurrence } from "@/lib/utils";
 
 export async function GET(req: Request) {
   try {
@@ -24,40 +24,55 @@ export async function GET(req: Request) {
     }
 
     try {
-      const ridesData = await prisma.ride.findMany({
-        where: {
-          date: {
-            gt: new Date(), // Only get rides in the future
-          },
-        },
-        orderBy: { date: "asc" },
-        include: {
-          trails: {
-            include: {
-              trail: {
-                include: {
-                  trailSystem: true, // include trailSystem
-                },
+      const rideInclude = {
+        trails: {
+          include: {
+            trail: {
+              include: {
+                trailSystem: true,
               },
             },
           },
-          host: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          attendees: {
-            include: {
-              user: true,
-            },
+        },
+        host: {
+          select: {
+            id: true,
+            name: true,
           },
         },
+        attendees: {
+          include: {
+            user: true,
+          },
+        },
+      } as const;
+
+      const ridesData = await prisma.ride.findMany({
+        orderBy: { date: "asc" },
+        include: rideInclude,
       });
 
       const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
 
-      const rides = ridesData.map((ride) => {
+      const now = new Date();
+      const normalizedRidesData = await Promise.all(
+        ridesData.map(async (rideRecord) => {
+          const recurrenceValue = (rideRecord as typeof rideRecord & { recurrence?: string | null }).recurrence ?? "none";
+          const nextDate = getNextRecurringDate(rideRecord.date, recurrenceValue as Recurrence, now);
+          if (nextDate) {
+            return prisma.ride.update({
+              where: { id: rideRecord.id },
+              data: { date: nextDate },
+              include: rideInclude,
+            });
+          }
+          return rideRecord;
+        })
+      );
+
+      const rides = normalizedRidesData
+        .filter((ride) => ride.date > now)
+        .map((ride) => {
         const rideTrails = ride.trails.map((rt) => rt.trail);
         const location = (ride as typeof ride & { location?: string | null }).location ?? null;
 
@@ -66,7 +81,7 @@ export async function GET(req: Request) {
           notes: ride.notes,
           name: ride.name,
           location,
-          location: ride.location,
+          recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
           date: ride.date.toISOString(),
           createdAt: ride.createdAt.toISOString(),
           isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),

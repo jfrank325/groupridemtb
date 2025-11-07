@@ -5,12 +5,12 @@ import { getServerSession } from "next-auth";
 import { CancelRideButton } from "@/app/components/CancelRideButton";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatTime } from "@/lib/utils";
+import { formatDate, formatTime, getNextRecurringDate, Recurrence } from "@/lib/utils";
 
 export default async function RideDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
 
-  const ride = await prisma.ride.findUnique({
+  let ride = await prisma.ride.findUnique({
     where: { id },
     include: {
       host: {
@@ -37,6 +37,34 @@ export default async function RideDetailPage({ params }: { params: { id: string 
     notFound();
   }
 
+  const recurrenceValueRaw = (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none";
+  const nextDate = getNextRecurringDate(ride.date, recurrenceValueRaw as Recurrence);
+  if (nextDate) {
+    ride = await prisma.ride.update({
+      where: { id },
+      data: { date: nextDate },
+      include: {
+        host: {
+          select: { id: true, name: true, email: true },
+        },
+        attendees: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        },
+        trails: {
+          include: {
+            trail: {
+              include: {
+                trailSystem: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   const session = await getServerSession(authOptions);
   const currentUserId = session?.user?.email
     ? (
@@ -49,13 +77,17 @@ export default async function RideDetailPage({ params }: { params: { id: string 
 
   const canCancel = currentUserId === ride.userId;
 
-  let recurrenceLabel: string | null = null;
-  if (ride.notes) {
-    const recurrenceMatch = ride.notes.match(/Recurrence:\s*(Daily|Weekly|Monthly|Yearly)/i);
-    if (recurrenceMatch) {
-      recurrenceLabel = recurrenceMatch[1][0].toUpperCase() + recurrenceMatch[1].slice(1).toLowerCase();
-    }
-  }
+  const recurrenceValue = (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none";
+  const recurrenceLabels: Record<Exclude<Recurrence, "none">, string> = {
+    daily: "Daily",
+    weekly: "Weekly",
+    monthly: "Monthly",
+    yearly: "Yearly",
+  };
+  const recurrenceLabel =
+    recurrenceValue !== "none"
+      ? recurrenceLabels[recurrenceValue as Exclude<Recurrence, "none">]
+      : null;
 
   const rideDate = ride.date;
   const rideLocation = (ride as { location?: string | null }).location ?? null;

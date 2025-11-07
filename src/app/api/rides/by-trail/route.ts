@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getNextRecurringDate, Recurrence } from "@/lib/utils";
 import { generalLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
@@ -44,32 +45,52 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Trail not found" }, { status: 404 });
     }
 
-    const rides = await prisma.ride.findMany({
+    const rideInclude = {
+      host: {
+        select: { id: true, name: true },
+      },
+      attendees: {
+        include: {
+          user: { select: { id: true, name: true } },
+        },
+      },
+      trails: {
+        include: {
+          trail: { select: { id: true, name: true, difficulty: true } },
+        },
+      },
+    } as const;
+
+    const ridesData = await prisma.ride.findMany({
       where: {
         trails: {
           some: { trailId },
         },
       },
-      include: {
-        host: {
-          select: { id: true, name: true },
-        },
-        attendees: {
-          include: {
-            user: { select: { id: true, name: true } },
-          },
-        },
-        trails: {
-          include: {
-            trail: { select: { id: true, name: true, difficulty: true } },
-          },
-        },
-      },
+      include: rideInclude,
       orderBy: { date: "asc" },
       take: 100, // Limit results to prevent DoS
     });
 
-    const response = NextResponse.json(rides);
+    const now = new Date();
+    const normalizedRides = await Promise.all(
+      ridesData.map(async (rideRecord) => {
+        const recurrenceValue = (rideRecord as typeof rideRecord & { recurrence?: string | null }).recurrence ?? "none";
+        const nextDate = getNextRecurringDate(rideRecord.date, recurrenceValue as Recurrence, now);
+        if (nextDate) {
+          return prisma.ride.update({
+            where: { id: rideRecord.id },
+            data: { date: nextDate },
+            include: rideInclude,
+          });
+        }
+        return rideRecord;
+      })
+    );
+
+    const futureRides = normalizedRides.filter((ride) => ride.date > now);
+
+    const response = NextResponse.json(futureRides);
     response.headers.set("X-RateLimit-Limit", rateLimitResult.limit.toString());
     response.headers.set("X-RateLimit-Remaining", rateLimitResult.remaining.toString());
     response.headers.set("X-RateLimit-Reset", rateLimitResult.reset.toString());

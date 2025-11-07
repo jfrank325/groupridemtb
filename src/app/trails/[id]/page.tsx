@@ -4,7 +4,7 @@ import Link from "next/link";
 import TrailDetailMapAndCards from "@/app/components/TrailDetailMapAndCards";
 import { type Trail } from "../../hooks/useTrails";
 import { TrailsTrailDetailClient } from "@/app/components/TrailsTrailDetailClient";
-import { formatDistanceValue, formatElevationValue } from "@/lib/utils";
+import { formatDistanceValue, formatElevationValue, getNextRecurringDate, Recurrence } from "@/lib/utils";
 
 interface TrailDetailPageProps {
   params: Promise<{ id: string }>;
@@ -37,7 +37,26 @@ export default async function TrailDetailPage({ params }: TrailDetailPageProps) 
     trailSystem: trailData.trailSystem || undefined,
   };
 
-  // Fetch upcoming rides for this trail
+  const rideInclude = {
+    host: {
+      select: { id: true, name: true },
+    },
+    attendees: {
+      include: {
+        user: {
+          select: { id: true, name: true },
+        },
+      },
+    },
+    trails: {
+      include: {
+        trail: {
+          select: { id: true, name: true },
+        },
+      },
+    },
+  } as const;
+
   const ridesData = await prisma.ride.findMany({
     where: {
       trails: {
@@ -45,44 +64,42 @@ export default async function TrailDetailPage({ params }: TrailDetailPageProps) 
           trailId: id,
         },
       },
-      date: {
-        gt: new Date(), // Only future rides
-      },
     },
-    include: {
-      host: {
-        select: { id: true, name: true },
-      },
-      attendees: {
-        include: {
-          user: {
-            select: { id: true, name: true },
-          },
-        },
-      },
-      trails: {
-        include: {
-          trail: {
-            select: { id: true, name: true },
-          },
-        },
-      },
-    },
+    include: rideInclude,
     orderBy: { date: "asc" },
-    take: 10, // Limit to 10 upcoming rides
+    take: 25,
   });
 
+  const now = new Date();
+  const normalizedRidesData = await Promise.all(
+    ridesData.map(async (rideRecord) => {
+      const nextDate = getNextRecurringDate(rideRecord.date, (rideRecord.recurrence as Recurrence) ?? "none", now);
+      if (nextDate) {
+        return prisma.ride.update({
+          where: { id: rideRecord.id },
+          data: { date: nextDate },
+          include: rideInclude,
+        });
+      }
+      return rideRecord;
+    })
+  );
+
   // Transform rides to match the expected interface (convert Date to string)
-  const transformedRides = ridesData.map((ride) => ({
-    id: ride.id,
-    date: ride.date.toISOString(),
-    name: ride.name,
-    location: (ride as typeof ride & { location?: string | null }).location ?? null,
-    notes: ride.notes,
-    host: ride.host,
-    attendees: ride.attendees,
-    trails: ride.trails,
-  }));
+  const transformedRides = normalizedRidesData
+    .filter((ride) => ride.date > now)
+    .slice(0, 10)
+    .map((ride) => ({
+      id: ride.id,
+      date: ride.date.toISOString(),
+      name: ride.name,
+      location: (ride as typeof ride & { location?: string | null }).location ?? null,
+      recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
+      notes: ride.notes,
+      host: ride.host,
+      attendees: ride.attendees,
+      trails: ride.trails,
+    }));
 
   // Fetch other trails at the same location
   const relatedTrailsData = trail.location

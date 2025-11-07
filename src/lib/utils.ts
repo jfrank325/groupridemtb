@@ -26,6 +26,48 @@ export function getDeterministicCoords(id: string): { lat: number; lng: number }
 export const EXAMPLE_RIDE_CUTOFF_ISO = "2025-11-07T13:42:09Z";
 export const EXAMPLE_RIDE_CUTOFF = new Date(EXAMPLE_RIDE_CUTOFF_ISO);
 
+export type Recurrence = "none" | "daily" | "weekly" | "monthly" | "yearly";
+
+export function getNextRecurringDate(
+  currentDate: Date,
+  recurrence: Recurrence,
+  referenceDate: Date = new Date()
+): Date | null {
+  if (recurrence === "none") {
+    return null;
+  }
+
+  const next = new Date(currentDate.getTime());
+  const maxIterations = 1000;
+  let iterations = 0;
+
+  while (next <= referenceDate && iterations < maxIterations) {
+    iterations += 1;
+    switch (recurrence) {
+      case "daily":
+        next.setUTCDate(next.getUTCDate() + 1);
+        break;
+      case "weekly":
+        next.setUTCDate(next.getUTCDate() + 7);
+        break;
+      case "monthly":
+        next.setUTCMonth(next.getUTCMonth() + 1);
+        break;
+      case "yearly":
+        next.setUTCFullYear(next.getUTCFullYear() + 1);
+        break;
+      default:
+        return null;
+    }
+  }
+
+  if (iterations >= maxIterations) {
+    return null;
+  }
+
+  return next > referenceDate ? next : null;
+}
+
 /**
  * Format distance in miles with appropriate unit
  * Note: Values are already in miles (despite field name suggesting km)

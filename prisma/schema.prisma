@@ -75,6 +75,7 @@ model Ride {
   name        String?
   notes       String?
   location    String?
+  recurrence  String   @default("none")
 
   host        User  @relation("RideHostRelation", fields: [userId], references: [id])
   attendees   RideAttendee[]

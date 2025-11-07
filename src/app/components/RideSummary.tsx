@@ -4,7 +4,7 @@ import { type Ride } from "../hooks/useRides";
 import { MessageForm } from "./MessageForm";
 import { useUser } from "../context/UserContext";
 import { useState, useEffect } from "react";
-import { formatDate, formatTime } from "@/lib/utils";
+import { formatDate, formatTime, Recurrence } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -87,6 +87,16 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
   // Show join button only if user is logged in, not the host, and hasn't joined
   const showJoinButton = session && currentUserId && !isHost && !hasJoined;
   const visibleMessages = showAllMessages ? messages : messages.slice(-3);
+  const recurrenceLabels: Record<Exclude<Recurrence, "none">, string> = {
+    daily: "Daily",
+    weekly: "Weekly",
+    monthly: "Monthly",
+    yearly: "Yearly",
+  };
+  const recurrenceLabel =
+    ride.recurrence && ride.recurrence !== "none"
+      ? recurrenceLabels[ride.recurrence as Exclude<Recurrence, "none">]
+      : null;
 
   return (
     <>
@@ -105,6 +115,11 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
           {ride.location && (
             <p className="mb-2 text-sm text-gray-600">
               Location: <span className="font-medium text-gray-900">{ride.location}</span>
+            </p>
+          )}
+          {recurrenceLabel && (
+            <p className="mb-2 text-sm text-gray-600">
+              Recurrence: <span className="font-medium text-gray-900">{recurrenceLabel}</span>
             </p>
           )}
           {ride.host && (

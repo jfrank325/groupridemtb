@@ -1,6 +1,6 @@
 
 import { prisma } from "@/lib/prisma";
-import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords } from "@/lib/utils";
+import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords, getNextRecurringDate, Recurrence } from "@/lib/utils";
 import { type Ride } from "../hooks/useRides";
 import { RidesList } from "./RidesList";
 
@@ -8,20 +8,35 @@ export const RidesServer = async () => {
 
     const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
 
-    const ridesData = await prisma.ride?.findMany({
-        include: {
-            trails: {
-                include: {
-                    trail: { include: { trailSystem: true } },
-                },
+    const rideInclude = {
+        trails: {
+            include: {
+                trail: { include: { trailSystem: true } },
             },
-            attendees: { include: { user: true } },
-            host: { select: { id: true, name: true } },
         },
-    });
+        attendees: { include: { user: true } },
+        host: { select: { id: true, name: true } },
+    } as const;
 
-    // Transform into frontend-ready structure
-    const rides: Ride[] = ridesData.map((ride) => {
+    const ridesData = await prisma.ride.findMany({ include: rideInclude });
+
+    const now = new Date();
+    const normalizedRidesData = await Promise.all(
+        ridesData.map(async (rideRecord) => {
+            const recurrenceValue = (rideRecord as typeof rideRecord & { recurrence?: string | null }).recurrence ?? "none";
+            const nextDate = getNextRecurringDate(rideRecord.date, recurrenceValue as Recurrence, now);
+            if (nextDate) {
+                return prisma.ride.update({
+                    where: { id: rideRecord.id },
+                    data: { date: nextDate },
+                    include: rideInclude,
+                });
+            }
+            return rideRecord;
+        })
+    );
+
+    const rides: Ride[] = normalizedRidesData.map((ride) => {
         const rideTrails = ride.trails.map((rt) => rt.trail);
         const location = (ride as typeof ride & { location?: string | null }).location ?? null;
         return {
@@ -29,6 +44,7 @@ export const RidesServer = async () => {
             notes: ride.notes,
             name: ride.name,
             location,
+            recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
             createdAt: ride.createdAt.toISOString(),
             isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
             date: ride.date.toISOString(),

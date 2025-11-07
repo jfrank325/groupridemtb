@@ -19,6 +19,7 @@ interface Ride {
     host: { id: string; name: string } | null;
     attendees: Array<{ user: { id: string; name: string } }>;
     location: string | null;
+    recurrence?: string | null;
 }
 
 const difficultyColors = {
