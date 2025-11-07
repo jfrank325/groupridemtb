@@ -102,6 +102,11 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
           <p className="mb-2">
             {formatDate(ride.date, { includeWeekday: true })} @ {formatTime(ride.date)}
           </p>
+          {ride.location && (
+            <p className="mb-2 text-sm text-gray-600">
+              Location: <span className="font-medium text-gray-900">{ride.location}</span>
+            </p>
+          )}
           {ride.host && (
             <p className="mb-2">
               Host: {ride.host.name}
@@ -115,12 +120,23 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
           {ride.notes && (
             <p className="mb-4">{ride.notes}</p>
           )}
-          <h3 className="font-semibold mb-2">Trails:</h3>
-          <ul className="list-disc list-inside mb-4">
-            {ride.trailNames.map((trailName) => (
-              <li key={trailName}>{trailName}</li>
-            ))}
-          </ul>
+          {(ride.trailNames.length > 0 || ride.location) && (
+            <div className="mb-4">
+              <h3 className="font-semibold mb-2">Route Details</h3>
+              {ride.trailNames.length > 0 && (
+                <ul className="list-disc list-inside mb-2">
+                  {ride.trailNames.map((trailName) => (
+                    <li key={trailName}>{trailName}</li>
+                  ))}
+                </ul>
+              )}
+              {ride.trailNames.length === 0 && ride.location && (
+                <p className="text-sm text-gray-600">
+                  Meetup at <span className="font-medium text-gray-900">{ride.location}</span>
+                </p>
+              )}
+            </div>
+          )}
           <p className="text-gray-600 mb-4">
             Attendees: {ride.attendees.length}
             {hasJoined && (

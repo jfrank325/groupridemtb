@@ -23,10 +23,12 @@ export const RidesServer = async () => {
     // Transform into frontend-ready structure
     const rides: Ride[] = ridesData.map((ride) => {
         const rideTrails = ride.trails.map((rt) => rt.trail);
+        const location = (ride as typeof ride & { location?: string | null }).location ?? null;
         return {
             id: ride.id,
             notes: ride.notes,
             name: ride.name,
+            location,
             createdAt: ride.createdAt.toISOString(),
             isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
             date: ride.date.toISOString(),

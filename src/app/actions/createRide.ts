@@ -44,6 +44,7 @@ export async function createRide(formData: FormData) {
     durationMin: Number(formData.get("durationMin")),
     notes: formData.get("notes") as string,
     trailIds: formData.getAll("trailIds") as string[],
+    location: (formData.get("location") as string | null) ?? undefined,
   };
 
   const parsed = rideSchema.safeParse(raw);
@@ -51,14 +52,18 @@ export async function createRide(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  // Validate that all trail IDs exist
-  const validTrails = await prisma.trail.findMany({
-    where: { id: { in: parsed.data.trailIds } },
-    select: { id: true },
-  });
+  const trailIds = parsed.data.trailIds ?? [];
 
-  if (validTrails.length !== parsed.data.trailIds.length) {
-    return { error: { trailIds: "One or more trail IDs are invalid" } };
+  // Validate that all trail IDs exist when provided
+  if (trailIds.length > 0) {
+    const validTrails = await prisma.trail.findMany({
+      where: { id: { in: trailIds } },
+      select: { id: true },
+    });
+
+    if (validTrails.length !== trailIds.length) {
+      return { error: { trailIds: "One or more trail IDs are invalid" } };
+    }
   }
 
   // Sanitize notes field
@@ -66,15 +71,24 @@ export async function createRide(formData: FormData) {
     ? sanitizeText(parsed.data.notes.trim().slice(0, 5000))
     : null;
 
+  let sanitizedLocation: string | null = null;
+  if (parsed.data.location) {
+    const cleaned = sanitizeText(parsed.data.location).trim();
+    sanitizedLocation = cleaned.length > 0 ? cleaned.slice(0, 255) : null;
+  }
+
   const ride = await prisma.ride.create({
     data: {
       userId: user.id, // Use actual user ID from session
       date: new Date(parsed.data.date),
       durationMin: parsed.data.durationMin,
       notes: sanitizedNotes, // Sanitized
-      trails: {
-        create: parsed.data.trailIds.map((id: string) => ({ trailId: id })),
-      },
+      location: sanitizedLocation,
+      trails: trailIds.length
+        ? {
+            create: trailIds.map((id: string) => ({ trailId: id })),
+          }
+        : undefined,
     },
   });
 

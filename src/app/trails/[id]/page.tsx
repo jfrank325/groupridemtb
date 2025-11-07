@@ -77,6 +77,7 @@ export default async function TrailDetailPage({ params }: TrailDetailPageProps) 
     id: ride.id,
     date: ride.date.toISOString(),
     name: ride.name,
+    location: (ride as typeof ride & { location?: string | null }).location ?? null,
     notes: ride.notes,
     host: ride.host,
     attendees: ride.attendees,

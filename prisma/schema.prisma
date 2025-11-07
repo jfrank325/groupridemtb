@@ -74,6 +74,7 @@ model Ride {
   durationMin Int
   name        String?
   notes       String?
+  location    String?
 
   host        User  @relation("RideHostRelation", fields: [userId], references: [id])
   attendees   RideAttendee[]

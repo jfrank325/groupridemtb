@@ -30,6 +30,7 @@ interface Ride {
   durationMin?: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  location?: string | null;
 }
 
 interface TrailsTrailDetailClientProps {
@@ -185,6 +186,11 @@ export function TrailsTrailDetailClient({
                         <p className="text-sm text-gray-600">
                           Hosted by {ride.host.name}
                         </p>
+                          {ride.location && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Meetup: <span className="font-medium text-gray-900">{ride.location}</span>
+                            </p>
+                          )}
                       </div>
                       {isHost && (
                         <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">

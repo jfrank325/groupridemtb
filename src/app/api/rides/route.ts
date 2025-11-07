@@ -59,11 +59,14 @@ export async function GET(req: Request) {
 
       const rides = ridesData.map((ride) => {
         const rideTrails = ride.trails.map((rt) => rt.trail);
+        const location = (ride as typeof ride & { location?: string | null }).location ?? null;
 
         return {
           id: ride.id,
           notes: ride.notes,
           name: ride.name,
+          location,
+          location: ride.location,
           date: ride.date.toISOString(),
           createdAt: ride.createdAt.toISOString(),
           isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),

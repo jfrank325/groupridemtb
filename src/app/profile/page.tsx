@@ -45,9 +45,11 @@ export default async function ProfilePage() {
         const difficulties = rideTrails.map((t) => t.difficulty || "Unknown");
         const totalDistanceKm = rideTrails.reduce((sum, t) => sum + (t.distanceKm || 0), 0);
         const trailSystems = Array.from(new Set(rideTrails.map((t) => t.trailSystem?.name || t.name || "Unknown")));
+        const location = (ride as typeof ride & { location?: string | null }).location ?? null;
         return {
             id: ride.id,
             name: ride.name,
+            location,
             host: ride.host ? { id: ride.host.id, name: ride.host.name } : undefined,
             notes: ride.notes,
             attendees: (ride.attendees || []).map((a) => ({ id: a.user.id, name: a.user.name })),
