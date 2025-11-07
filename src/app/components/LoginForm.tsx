@@ -1,18 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import BasicButton from "../components/BasicButton";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const authMessageKey = searchParams.get("authMessage");
+  const callbackUrl = searchParams.get("callbackUrl") || "/profile";
+
+  const authBanner = useMemo(() => {
+    if (!authMessageKey) return null;
+
+    switch (authMessageKey) {
+      case "create-ride":
+        return "Sign in to finish creating your ride.";
+      default:
+        return null;
+    }
+  }, [authMessageKey]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +38,7 @@ export default function LoginForm() {
       redirect: false,
       email,
       password,
-      callbackUrl: "/profile",
+      callbackUrl,
     });
 
     setLoading(false);
@@ -31,8 +46,8 @@ export default function LoginForm() {
     if (res?.error) {
       setError(res.error);
     } else if (res?.ok) {
-      // Always redirect to profile page after successful login
-      router.replace("/profile");
+      // Redirect to the intended destination (fallback to profile)
+      router.replace(callbackUrl);
       router.refresh(); // Refresh to update server components
     }
   }
@@ -66,9 +81,25 @@ export default function LoginForm() {
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
+      {authBanner && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+          {authBanner}
+        </div>
+      )}
+
       <BasicButton type="submit" disabled={loading} className="cursor-pointer">
         {loading ? "Signing in..." : "Sign In"}
       </BasicButton>
+
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+        <p className="mb-2">Don&apos;t have an account yet?</p>
+        <Link
+          href="/register"
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+        >
+          Create an Account
+        </Link>
+      </div>
 
       <p className="text-xs leading-relaxed text-gray-500">
         By signing in you agree to our{' '}

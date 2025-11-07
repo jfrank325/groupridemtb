@@ -71,6 +71,12 @@ export default async function Home() {
                   >
                     Browse Rides
                   </Link>
+                  <Link
+                    href="/login?callbackUrl=%2Frides%2Fnew&authMessage=create-ride"
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-emerald-500 hover:bg-emerald-600 transition-colors shadow-lg hover:shadow-xl"
+                  >
+                    Plan a Ride
+                  </Link>
                 </>
               ) : (
                 <Link

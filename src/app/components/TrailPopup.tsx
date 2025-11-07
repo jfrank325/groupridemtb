@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { Trail } from "../hooks/useTrails";
 import Link from "next/link";
@@ -32,6 +32,15 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
     const { session } = useUser();
 
     const trailId = trail.id;
+
+    const createRideHref = useMemo(() => {
+        if (!trailId) return "/rides/new";
+        if (session) {
+            return `/rides/new?trailId=${trailId}`;
+        }
+        const callback = encodeURIComponent(`/rides/new?trailId=${trailId}`);
+        return `/login?callbackUrl=${callback}&authMessage=create-ride`;
+    }, [session, trailId]);
 
     useEffect(() => {
         if (!trailId) {
@@ -229,28 +238,29 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                                 ))}
                             </div>
                         )}
-                        <Link
-                            href={`/rides/new?trailId=${trailId}`}
-                            className="block w-full border-2 border-emerald-600 text-emerald-700 bg-white px-4 py-2 rounded-lg hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-center text-sm"
-                        >
-                            Create Ride
-                        </Link>
+                        {trailId && (
+                            <Link
+                                href={createRideHref}
+                                className="block w-full border-2 border-emerald-600 text-emerald-700 bg-white px-4 py-2 rounded-lg hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-center text-sm"
+                            >
+                                Create Ride
+                            </Link>
+                        )}
                     </div>
                 )}
 
                 {!session && (
                     <div className="pt-6 border-t border-gray-200 text-center">
-                        <Link
-                            href={`/rides/new?trailId=${trailId}`}
-                            className="inline-block border-2 border-emerald-600 text-emerald-700 bg-white px-6 py-2 rounded-lg hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-sm"
-                        >
-                            Create Ride
-                        </Link>
-                        <p className="text-xs text-gray-500 mt-3">
-                            <Link href="/login" className="text-emerald-600 hover:text-emerald-700 underline">
-                                Sign in
+                        {trailId && (
+                            <Link
+                                href={createRideHref}
+                                className="inline-block border-2 border-emerald-600 text-emerald-700 bg-white px-6 py-2 rounded-lg hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-sm"
+                            >
+                                Plan a Ride on this Trail
                             </Link>
-                            {" "}to join rides on this trail
+                        )}
+                        <p className="text-xs text-gray-500 mt-3">
+                            Log in to join or host rides on this trail.
                         </p>
                     </div>
                 )}

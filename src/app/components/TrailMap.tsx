@@ -26,11 +26,35 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
   const [loadingCoordinates, setLoadingCoordinates] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const isTouchDeviceRef = useRef(false);
 
   // Keep the ref updated with the latest callback
   useEffect(() => {
     onTrailHoverRef.current = onTrailHover;
   }, [onTrailHover]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(pointer: coarse)");
+    const updateMatches = (matches: boolean) => {
+      setIsTouchDevice(matches);
+      isTouchDeviceRef.current = matches;
+    };
+
+    updateMatches(mediaQuery.matches);
+
+    const listener = (event: MediaQueryListEvent) => updateMatches(event.matches);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", listener);
+      return () => mediaQuery.removeEventListener("change", listener);
+    }
+
+    mediaQuery.addListener(listener);
+    return () => mediaQuery.removeListener(listener);
+  }, []);
 
   // Fetch coordinates from MTB Projects API for trails that need them
   useEffect(() => {
@@ -165,9 +189,36 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
         const feature = e.features?.[0];
         if (!feature) return;
 
+        const trailId = feature.properties?.id;
+        const trail = trails.find((t) => t.id === trailId);
+        if (!trail) return;
+
+        // Clear pending hover timers
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+          hoverTimeoutRef.current = null;
+        }
+        if (hideTimeoutRef.current) {
+          clearTimeout(hideTimeoutRef.current);
+          hideTimeoutRef.current = null;
+        }
+
+        if (isTouchDeviceRef.current) {
+          setSelectedTrail(null);
+          setHoverPosition({ x: e.point.x, y: e.point.y });
+          setHoveredTrail(trail);
+          if (onTrailHoverRef.current) {
+            onTrailHoverRef.current(trailId ?? null);
+          }
+          return;
+        }
+
         const coords = (feature.geometry as any).coordinates;
         const midpoint = coords[Math.floor(coords.length / 2)];
         const [lng, lat] = midpoint;
+
+        setHoveredTrail(null);
+        setHoverPosition(null);
 
         setSelectedTrail({
           id: feature.properties?.id,
@@ -395,9 +446,10 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
           <div className="pointer-events-auto">
             <TrailHoverPopup
               trail={hoveredTrail}
-              onShowMore={() => handleShowMore(hoveredTrail)}
+              onShowMore={isTouchDevice ? undefined : () => handleShowMore(hoveredTrail)}
               onMouseEnter={handleHoverPopupMouseEnter}
               onMouseLeave={handleHoverPopupMouseLeave}
+              linkHref={isTouchDevice ? `/trails/${hoveredTrail.id}` : undefined}
             />
           </div>
         </div>

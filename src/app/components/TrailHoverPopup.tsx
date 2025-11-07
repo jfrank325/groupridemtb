@@ -1,14 +1,16 @@
+import Link from "next/link";
 import { Trail } from "../hooks/useTrails";
 import { formatDistanceValue } from "@/lib/utils";
 
 interface TrailHoverPopupProps {
   trail: Trail;
-  onShowMore: () => void;
+  onShowMore?: () => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  linkHref?: string;
 }
 
-export default function TrailHoverPopup({ trail, onShowMore, onMouseEnter, onMouseLeave }: TrailHoverPopupProps) {
+export default function TrailHoverPopup({ trail, onShowMore, onMouseEnter, onMouseLeave, linkHref }: TrailHoverPopupProps) {
   return (
     <div 
       className="bg-white rounded-lg border border-gray-200 shadow-lg p-3 min-w-[200px] max-w-[250px]"
@@ -21,12 +23,21 @@ export default function TrailHoverPopup({ trail, onShowMore, onMouseEnter, onMou
           Distance: {formatDistanceValue(trail.distanceKm)} miles
         </p>
       )}
-      <button
-        onClick={onShowMore}
-        className="w-full text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
-      >
-        Show More
-      </button>
+      {linkHref ? (
+        <Link
+          href={linkHref}
+          className="inline-flex w-full items-center justify-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
+        >
+          View Details
+        </Link>
+      ) : onShowMore ? (
+        <button
+          onClick={onShowMore}
+          className="w-full text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
+        >
+          Show More
+        </button>
+      ) : null}
     </div>
   );
 }

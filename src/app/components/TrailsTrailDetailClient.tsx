@@ -92,14 +92,25 @@ export function TrailsTrailDetailClient({
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Upcoming Rides</h2>
-        {session && (
-          <Link
-            href={`/rides/new?trailId=${trailId}`}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+        <Link
+          href={session ? `/rides/new?trailId=${trailId}` : `/login?callbackUrl=${encodeURIComponent(`/rides/new?trailId=${trailId}`)}&authMessage=create-ride`}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            Create Ride
-          </Link>
-        )}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          {session ? "Create Ride" : "Log in to Create a Ride"}
+        </Link>
       </div>
 
       {error && (
@@ -124,14 +135,32 @@ export function TrailsTrailDetailClient({
             />
           </svg>
           <p className="text-gray-700 text-lg mb-2">No upcoming rides scheduled</p>
-          {session && (
+          <div className="mt-4 flex flex-col items-center gap-3">
             <Link
-              href={`/rides/new?trailId=${trailId}`}
-              className="text-emerald-600 hover:text-emerald-700 font-medium"
+              href={session ? `/rides/new?trailId=${trailId}` : `/login?callbackUrl=${encodeURIComponent(`/rides/new?trailId=${trailId}`)}&authMessage=create-ride`}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600 px-5 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             >
-              Be the first to create one!
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              {session ? "Be the first to create one" : "Log in to create a ride"}
             </Link>
-          )}
+            {!session && (
+              <p className="text-xs text-gray-500">
+                You’ll be redirected back here after signing in.
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
