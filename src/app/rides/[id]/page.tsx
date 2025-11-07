@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 
-import { CancelRideButton } from "@/app/components/CancelRideButton";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime, getNextRecurringDate, Recurrence } from "@/lib/utils";
@@ -75,7 +74,7 @@ export default async function RideDetailPage({ params }: { params: { id: string 
       )?.id ?? null
     : null;
 
-  const canCancel = currentUserId === ride.userId;
+  const isHost = currentUserId === ride.userId;
 
   const recurrenceValue = (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none";
   const recurrenceLabels: Record<Exclude<Recurrence, "none">, string> = {
@@ -119,7 +118,14 @@ export default async function RideDetailPage({ params }: { params: { id: string 
             >
               Plan Another Ride
             </Link>
-            {canCancel && <CancelRideButton rideId={ride.id} />}
+            {isHost && (
+              <Link
+                href={`/rides/${ride.id}/edit`}
+                className="inline-flex items-center justify-center rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
+              >
+                Edit Ride
+              </Link>
+            )}
           </div>
         </div>
 
