@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generalLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
+import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords } from "@/lib/utils";
 
 export async function GET(req: Request) {
   try {
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
     }
 
     try {
-      const rides = await prisma.ride.findMany({
+      const ridesData = await prisma.ride.findMany({
         where: {
           date: {
             gt: new Date(), // Only get rides in the future
@@ -40,9 +41,46 @@ export async function GET(req: Request) {
               },
             },
           },
-          host: true,
-          attendees: true,
+          host: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          attendees: {
+            include: {
+              user: true,
+            },
+          },
         },
+      });
+
+      const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
+
+      const rides = ridesData.map((ride) => {
+        const rideTrails = ride.trails.map((rt) => rt.trail);
+
+        return {
+          id: ride.id,
+          notes: ride.notes,
+          name: ride.name,
+          date: ride.date.toISOString(),
+          createdAt: ride.createdAt.toISOString(),
+          isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
+          trailIds: rideTrails.map((t) => t.id),
+          trailNames: rideTrails.map((t) => t.name),
+          trailSystems: Array.from(
+            new Set(rideTrails.map((t) => t.trailSystem?.name || t.name || "Unknown"))
+          ),
+          difficulties: rideTrails.map((t) => t.difficulty || "Unknown"),
+          totalDistanceKm: rideTrails.reduce((sum, t) => sum + (t.distanceKm || 0), 0),
+          ...getDeterministicCoords(ride.id),
+          attendees: ride.attendees.map((a) => ({
+            id: a.user.id,
+            name: a.user.name,
+          })),
+          host: ride.host ? { id: ride.host.id, name: ride.host.name } : undefined,
+        };
       });
 
       const response = NextResponse.json(rides);

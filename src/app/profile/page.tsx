@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { getDeterministicCoords } from "@/lib/utils";
+import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords } from "@/lib/utils";
 import { RidesList } from "../components/RidesList";
 import LogoutButton from "../components/LogoutButton";
 import { redirect } from "next/navigation";
@@ -35,6 +35,8 @@ export default async function ProfilePage() {
         },
     });
 
+    const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
+
     const rides = fullUser?.rides?.map((r) => {
         const ride = r.ride;
         const rideTrails = ride.trails.map((rt) => rt.trail);
@@ -50,6 +52,8 @@ export default async function ProfilePage() {
             notes: ride.notes,
             attendees: (ride.attendees || []).map((a) => ({ id: a.user.id, name: a.user.name })),
             date: ride.date ? ride.date.toISOString() : "",
+            createdAt: ride.createdAt.toISOString(),
+            isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
             trailIds,
             trailNames,
             trailSystems,

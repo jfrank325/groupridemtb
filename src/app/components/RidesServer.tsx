@@ -1,10 +1,12 @@
 
 import { prisma } from "@/lib/prisma";
-import { getDeterministicCoords } from "@/lib/utils";
-import { useRides, type Ride } from "../hooks/useRides";
+import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords } from "@/lib/utils";
+import { type Ride } from "../hooks/useRides";
 import { RidesList } from "./RidesList";
 
 export const RidesServer = async () => {
+
+    const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
 
     const ridesData = await prisma.ride?.findMany({
         include: {
@@ -25,6 +27,8 @@ export const RidesServer = async () => {
             id: ride.id,
             notes: ride.notes,
             name: ride.name,
+            createdAt: ride.createdAt.toISOString(),
+            isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
             date: ride.date.toISOString(),
             trailIds: rideTrails.map((t) => t.id),
             trailNames: rideTrails.map((t) => t.name),

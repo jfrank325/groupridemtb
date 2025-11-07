@@ -23,6 +23,9 @@ export function getDeterministicCoords(id: string): { lat: number; lng: number }
   };
 }
 
+export const EXAMPLE_RIDE_CUTOFF_ISO = "2025-11-07T13:42:09Z";
+export const EXAMPLE_RIDE_CUTOFF = new Date(EXAMPLE_RIDE_CUTOFF_ISO);
+
 /**
  * Format distance in miles with appropriate unit
  * Note: Values are already in miles (despite field name suggesting km)

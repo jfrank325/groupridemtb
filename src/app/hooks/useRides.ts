@@ -7,6 +7,8 @@ export type Ride = {
   date: string;
   notes: string | null;
   name: string | null;
+  createdAt: string;
+  isExample: boolean;
   trailIds: string[];
   trailNames: string[];
   trailSystems: string[];

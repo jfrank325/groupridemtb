@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getDeterministicCoords } from "@/lib/utils";
+import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords } from "@/lib/utils";
 import { RidesAndTrailsClient } from "./RidesAndTrailsClient";
 import { type Ride } from "../hooks/useRides";
 import { type Trail } from "../hooks/useTrails";
@@ -25,12 +25,16 @@ export const RidesAndTrailsServer = async () => {
   });
 
   // Transform rides into frontend-ready structure
+  const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
+
   const rides: Ride[] = ridesData.map((ride) => {
     const rideTrails = ride.trails.map((rt) => rt.trail);
     return {
       id: ride.id,
       notes: ride.notes,
       name: ride.name,
+      createdAt: ride.createdAt.toISOString(),
+      isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
       date: ride.date.toISOString(),
       trailIds: rideTrails.map((t) => t.id),
       trailNames: rideTrails.map((t) => t.name),

@@ -93,6 +93,12 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
       {ride && (
         <div className="p-4 text-gray-700">
           <h2 className="text-2xl font-semibold mb-4 text-gray-900">{ride.name || "Untitled Ride"}</h2>
+          {ride.isExample && (
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
+              Example Ride
+            </div>
+          )}
           <p className="mb-2">
             {formatDate(ride.date, { includeWeekday: true })} @ {formatTime(ride.date)}
           </p>

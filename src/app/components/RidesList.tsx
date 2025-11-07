@@ -40,6 +40,7 @@ export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] 
             ) : (
                 <div className="space-y-4">
                     {rides.map((ride) => {
+                        console.log(ride);
                         const isHighlighted = highlightedRideIds.includes(ride.id);
                         return (
                             <div
@@ -56,6 +57,12 @@ export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] 
                                         <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors mb-2">
                                             {ride.name || "Untitled Ride"}
                                         </h3>
+                                        {ride.isExample && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
+                                                Example Ride
+                                            </span>
+                                        )}
                                         <div className="flex items-center gap-4 text-sm text-gray-600">
                                             <div className="flex items-center gap-1">
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
