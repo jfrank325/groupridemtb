@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type Ride } from "../hooks/useRides";
 import { MessageForm } from "./MessageForm";
 import { useUser } from "../context/UserContext";
@@ -102,7 +103,17 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
     <>
       {ride && (
         <div className="p-4 text-gray-700">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-900">{ride.name || "Untitled Ride"}</h2>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              {ride.name || "Untitled Ride"}
+            </h2>
+            <Link
+              href={`/rides/${ride.id}`}
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+            >
+              View Ride Details
+            </Link>
+          </div>
           {ride.isExample && (
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
