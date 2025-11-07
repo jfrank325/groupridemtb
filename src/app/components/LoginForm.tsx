@@ -3,12 +3,10 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import BasicButton from "../components/BasicButton";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/profile";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +22,7 @@ export default function LoginForm() {
       redirect: false,
       email,
       password,
-      callbackUrl,
+      callbackUrl: "/profile",
     });
 
     setLoading(false);
@@ -32,7 +30,9 @@ export default function LoginForm() {
     if (res?.error) {
       setError(res.error);
     } else if (res?.ok) {
-      router.push(callbackUrl);
+      // Always redirect to profile page after successful login
+      router.replace("/profile");
+      router.refresh(); // Refresh to update server components
     }
   }
 
@@ -70,15 +70,15 @@ export default function LoginForm() {
       </BasicButton>
 
       {/* Example for OAuth provider */}
-      <div className="text-center text-sm text-gray-500 mt-2">or</div>
+      {/* <div className="text-center text-sm text-gray-500 mt-2">or</div>
 
       <BasicButton
         type="button"
-        onClick={() => signIn("google", { callbackUrl })}
+        onClick={() => signIn("google", { callbackUrl: "/profile" })}
         className="bg-red-500 hover:bg-red-600"
       >
         Sign in with Google
-      </BasicButton>
+      </BasicButton> */}
     </form>
   );
 }
