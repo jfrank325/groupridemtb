@@ -31,7 +31,7 @@ export default function RegisterPage() {
             Already have an account?{" "}
             <Link 
               href="/login"
-              className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded"
+              className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded cursor-pointer"
             >
               Sign in here
             </Link>

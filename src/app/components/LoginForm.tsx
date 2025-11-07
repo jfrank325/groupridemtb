@@ -65,7 +65,7 @@ export default function LoginForm() {
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
-      <BasicButton type="submit" disabled={loading}>
+      <BasicButton type="submit" disabled={loading} className="cursor-pointer">
         {loading ? "Signing in..." : "Sign In"}
       </BasicButton>
 
