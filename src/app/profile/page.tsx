@@ -50,6 +50,7 @@ export default async function ProfilePage() {
             id: ride.id,
             name: ride.name,
             location,
+            recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
             host: ride.host ? { id: ride.host.id, name: ride.host.name } : undefined,
             notes: ride.notes,
             attendees: (ride.attendees || []).map((a) => ({ id: a.user.id, name: a.user.name })),

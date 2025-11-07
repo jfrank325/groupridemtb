@@ -20,9 +20,7 @@ export const rideSchema = z
       .string()
       .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Please select a valid time."),
     recurrence: z
-      .enum(["none", "daily", "weekly", "monthly", "yearly"], {
-        required_error: "Select a recurrence option.",
-      })
+      .enum(["none", "daily", "weekly", "monthly", "yearly"] as const)
       .default("none"),
     date: z.string().min(1, "Please choose a date."),
     durationMin: z

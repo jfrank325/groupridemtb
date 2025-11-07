@@ -8,10 +8,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 export default async function NewRidePage({
     searchParams,
 }: {
-    searchParams: { trailId?: string };
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+    const resolvedSearchParams = await searchParams;
+    const rawTrailId = resolvedSearchParams?.trailId;
     const session = await getServerSession(authOptions);
-    const trailId = searchParams?.trailId;
+    const trailId = Array.isArray(rawTrailId) ? rawTrailId[0] : rawTrailId;
 
     if (!session) {
         const callbackPath = trailId ? `/rides/new?trailId=${encodeURIComponent(trailId)}` : "/rides/new";
