@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import BasicButton from "../components/BasicButton";
@@ -68,6 +69,24 @@ export default function LoginForm() {
       <BasicButton type="submit" disabled={loading} className="cursor-pointer">
         {loading ? "Signing in..." : "Sign In"}
       </BasicButton>
+
+      <p className="text-xs leading-relaxed text-gray-500">
+        By signing in you agree to our{' '}
+        <Link
+          href="/terms"
+          className="font-medium text-emerald-700 underline-offset-2 hover:text-emerald-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        >
+          Terms of Use
+        </Link>
+        {' '}and acknowledge our{' '}
+        <Link
+          href="/privacy"
+          className="font-medium text-emerald-700 underline-offset-2 hover:text-emerald-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        >
+          Privacy Policy
+        </Link>
+        .
+      </p>
 
       {/* Example for OAuth provider */}
       {/* <div className="text-center text-sm text-gray-500 mt-2">or</div>

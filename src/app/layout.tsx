@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { UserProvider } from "@/app/context/UserContext";
 import { Navigation } from "./components/Navigation";
+import { Footer } from "./components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,9 +105,12 @@ export default async function RootLayout({
       <UserProvider session={session}>
 
         <body
-          className={`${geistSans.variable} ${inter.variable} antialiased`}>
+          className={`${geistSans.variable} ${inter.variable} antialiased bg-gray-50`}>
           <Navigation session={session} />
-          {children}
+          <main className="min-h-[calc(100vh-4rem)]">
+            {children}
+          </main>
+          <Footer />
         </body>
       </UserProvider>
     </html>

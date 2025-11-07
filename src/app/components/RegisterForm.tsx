@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { userSchema, UserFormData } from '@/lib/validation/userSchema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -226,6 +227,23 @@ export default function RegisterForm() {
             </>
           )}
         </button>
+        <p className="mt-4 text-xs leading-relaxed text-gray-500">
+          By creating an account you agree to our{' '}
+          <Link
+            href="/terms"
+            className="font-medium text-emerald-700 underline-offset-2 hover:text-emerald-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+          >
+            Terms of Use
+          </Link>
+          {' '}and acknowledge our{' '}
+          <Link
+            href="/privacy"
+            className="font-medium text-emerald-700 underline-offset-2 hover:text-emerald-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </form>
   );
