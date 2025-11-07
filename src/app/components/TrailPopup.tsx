@@ -18,6 +18,7 @@ interface Ride {
     notes: string | null;
     host: { id: string; name: string } | null;
     attendees: Array<{ user: { id: string; name: string } }>;
+    location: string | null;
 }
 
 const difficultyColors = {
@@ -41,6 +42,8 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
         const callback = encodeURIComponent(`/rides/new?trailId=${trailId}`);
         return `/login?callbackUrl=${callback}&authMessage=create-ride`;
     }, [session, trailId]);
+
+    const trailDetailPath = trailId ? `/trails/${trailId}` : "/trails";
 
     useEffect(() => {
         if (!trailId) {
@@ -187,83 +190,102 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                 </div>
 
                 {/* Upcoming Rides Section */}
-                {session && (
-                    <div className="pt-6 border-t border-gray-200">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Rides</h3>
-                        {loading ? (
-                            <div className="text-center py-4 text-gray-500 text-sm">Loading rides...</div>
-                        ) : rides.length === 0 ? (
-                            <div className="text-center py-4 text-gray-500 text-sm mb-4">
-                                No upcoming rides scheduled for this trail.
-                            </div>
-                        ) : (
-                            <div className="space-y-3 mb-4">
-                                {rides.map((ride) => (
-                                    <div
-                                        key={ride.id}
-                                        className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:border-emerald-300 transition-colors"
-                                    >
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex-1">
-                                                <p className="font-medium text-gray-900">
-                                                    {ride.name || "Group Ride"}
-                                                </p>
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    {formatDate(ride.date, { includeWeekday: true, includeTime: true, hour12: true })}
-                                                </p>
-                                                {ride.host && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        Hosted by {ride.host.name}
-                                                    </p>
-                                                )}
-                                                {ride.attendees && ride.attendees.length > 0 && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {ride.attendees.length} {ride.attendees.length === 1 ? 'rider' : 'riders'} attending
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {ride.notes && (
-                                            <p className="text-sm text-gray-700 mb-3 pt-2 border-t border-gray-200">
-                                                {ride.notes}
-                                            </p>
-                                        )}
-                                        <button
-                                            onClick={() => joinRide(ride.id)}
-                                            className="w-full border-2 border-emerald-600 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 hover:border-emerald-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-sm"
-                                        >
-                                            Join Ride
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {trailId && (
+                <div className="pt-6 border-t border-gray-200">
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Upcoming Rides</h3>
+                        {!session && (
                             <Link
-                                href={createRideHref}
-                                className="block w-full border-2 border-emerald-600 text-emerald-700 bg-white px-4 py-2 rounded-lg hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-center text-sm"
+                                href={`/login?callbackUrl=${encodeURIComponent(trailDetailPath)}&authMessage=create-ride`}
+                                className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
                             >
-                                Create Ride
+                                Sign in to join rides
                             </Link>
                         )}
                     </div>
-                )}
-
-                {!session && (
-                    <div className="pt-6 border-t border-gray-200 text-center">
-                        {trailId && (
-                            <Link
-                                href={createRideHref}
-                                className="inline-block border-2 border-emerald-600 text-emerald-700 bg-white px-6 py-2 rounded-lg hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-sm"
-                            >
-                                Plan a Ride on this Trail
-                            </Link>
-                        )}
-                        <p className="text-xs text-gray-500 mt-3">
+                    {loading ? (
+                        <div className="text-center py-4 text-gray-500 text-sm">Loading rides...</div>
+                    ) : rides.length === 0 ? (
+                        <div className="text-center py-4 text-gray-500 text-sm mb-4">
+                            No upcoming rides scheduled for this trail.
+                        </div>
+                    ) : (
+                        <div className="space-y-3 mb-4">
+                            {rides.map((ride) => (
+                                <div
+                                    key={ride.id}
+                                    className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:border-emerald-300 transition-colors"
+                                >
+                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-900">
+                                                {ride.name || "Group Ride"}
+                                            </p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {formatDate(ride.date, { includeWeekday: true, includeTime: true, hour12: true })}
+                                            </p>
+                                            {ride.location && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Meetup: <span className="font-medium text-gray-900">{ride.location}</span>
+                                                </p>
+                                            )}
+                                            {ride.host && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Hosted by {ride.host.name}
+                                                </p>
+                                            )}
+                                            {ride.attendees && ride.attendees.length > 0 && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {ride.attendees.length} {ride.attendees.length === 1 ? 'rider' : 'riders'} attending
+                                                </p>
+                                            )}
+                                            {ride.notes && (
+                                                <p className="text-sm text-gray-700 mt-3 border-t border-gray-200 pt-2">
+                                                    {ride.notes}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col gap-2 md:items-end">
+                                            {session ? (
+                                                <button
+                                                    onClick={() => joinRide(ride.id)}
+                                                    className="w-full md:w-auto border-2 border-emerald-600 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 hover:border-emerald-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-sm"
+                                                >
+                                                    Join Ride
+                                                </button>
+                                            ) : (
+                                                <Link
+                                                    href={`/login?callbackUrl=${encodeURIComponent(`/rides/${ride.id}`)}&authMessage=create-ride`}
+                                                    className="w-full md:w-auto inline-flex items-center justify-center border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 rounded-lg hover:bg-emerald-50"
+                                                >
+                                                    Sign in to Join
+                                                </Link>
+                                            )}
+                                            <Link
+                                                href={`/rides/${ride.id}`}
+                                                className="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                                            >
+                                                View Ride Details
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {trailId && (
+                        <Link
+                            href={createRideHref}
+                            className="block w-full border-2 border-emerald-600 text-emerald-700 bg-white px-4 py-2 rounded-lg hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-center text-sm"
+                        >
+                            Plan a Ride on this Trail
+                        </Link>
+                    )}
+                    {!session && (
+                        <p className="text-xs text-gray-500 mt-3 text-center">
                             Log in to join or host rides on this trail.
                         </p>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

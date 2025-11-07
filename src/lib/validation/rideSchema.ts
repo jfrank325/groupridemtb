@@ -2,6 +2,11 @@ import { z } from 'zod';
 
 export const rideSchema = z
   .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "Ride name is required.")
+      .max(120, "Ride name cannot exceed 120 characters."),
     trailIds: z
       .array(z.string().min(1))
       .max(20, "Maximum 20 trails allowed.")
@@ -10,6 +15,14 @@ export const rideSchema = z
       .string()
       .trim()
       .max(255, "Location cannot exceed 255 characters.")
+      .optional(),
+    time: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Please select a valid time."),
+    recurrence: z
+      .enum(["none", "daily", "weekly", "monthly", "yearly"], {
+        required_error: "Select a recurrence option.",
+      })
       .optional(),
     date: z.string().min(1, "Please choose a date."),
     durationMin: z

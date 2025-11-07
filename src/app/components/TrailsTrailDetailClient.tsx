@@ -251,15 +251,32 @@ export function TrailsTrailDetailClient({
                     </div>
                   </div>
 
-                  {session && !isHost && !isAttending && (
-                    <button
-                      onClick={() => joinRide(ride.id)}
-                      disabled={loading}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 whitespace-nowrap"
+                  <div className="flex flex-col items-start gap-2 md:items-end">
+                    {session ? (
+                      !isHost && !isAttending ? (
+                        <button
+                          onClick={() => joinRide(ride.id)}
+                          disabled={loading}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 whitespace-nowrap"
+                        >
+                          {loading ? "Joining..." : "Join Ride"}
+                        </button>
+                      ) : null
+                    ) : (
+                      <Link
+                        href={`/login?callbackUrl=${encodeURIComponent(`/rides/${ride.id}`)}&authMessage=create-ride`}
+                        className="inline-flex items-center justify-center rounded-lg border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                      >
+                        Sign in to Join
+                      </Link>
+                    )}
+                    <Link
+                      href={`/rides/${ride.id}`}
+                      className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                     >
-                      {loading ? "Joining..." : "Join Ride"}
-                    </button>
-                  )}
+                      View Ride Details
+                    </Link>
+                  </div>
                 </div>
               </div>
             );

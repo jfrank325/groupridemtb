@@ -39,12 +39,33 @@ export async function createRide(formData: FormData) {
     return { error: "User not found" };
   }
 
+  const locationValue = formData.get("location");
+  const normalizedLocation =
+    typeof locationValue === "string" && locationValue.trim().length > 0
+      ? locationValue
+      : undefined;
+
+  const notesValue = formData.get("notes");
+  const normalizedNotes =
+    typeof notesValue === "string" && notesValue.trim().length > 0
+      ? notesValue
+      : undefined;
+
+  const recurrenceValue = formData.get("recurrence");
+  const normalizedRecurrence =
+    typeof recurrenceValue === "string" && ["daily", "weekly", "monthly", "yearly"].includes(recurrenceValue)
+      ? recurrenceValue
+      : undefined;
+
   const raw = {
+    name: (formData.get("name") as string | null) ?? undefined,
     date: formData.get("date") as string,
     durationMin: Number(formData.get("durationMin")),
-    notes: formData.get("notes") as string,
+    notes: normalizedNotes,
     trailIds: formData.getAll("trailIds") as string[],
-    location: (formData.get("location") as string | null) ?? undefined,
+    location: normalizedLocation,
+    time: formData.get("time") as string,
+    recurrence: normalizedRecurrence,
   };
 
   const parsed = rideSchema.safeParse(raw);
@@ -67,7 +88,7 @@ export async function createRide(formData: FormData) {
   }
 
   // Sanitize notes field
-  const sanitizedNotes = parsed.data.notes 
+  let sanitizedNotes = parsed.data.notes 
     ? sanitizeText(parsed.data.notes.trim().slice(0, 5000))
     : null;
 
@@ -77,9 +98,24 @@ export async function createRide(formData: FormData) {
     sanitizedLocation = cleaned.length > 0 ? cleaned.slice(0, 255) : null;
   }
 
+  const recurrenceLabels: Record<string, string> = {
+    daily: "Daily",
+    weekly: "Weekly",
+    monthly: "Monthly",
+    yearly: "Yearly",
+  };
+
+  if (parsed.data.recurrence) {
+    const recurrenceNote = `Recurrence: ${recurrenceLabels[parsed.data.recurrence]}`;
+    sanitizedNotes = sanitizedNotes
+      ? `${sanitizedNotes}\n\n${recurrenceNote}`
+      : recurrenceNote;
+  }
+
   const ride = await prisma.ride.create({
     data: {
       userId: user.id, // Use actual user ID from session
+      name: parsed.data.name?.trim() || null,
       date: new Date(parsed.data.date),
       durationMin: parsed.data.durationMin,
       notes: sanitizedNotes, // Sanitized
@@ -93,5 +129,6 @@ export async function createRide(formData: FormData) {
   });
 
   revalidatePath("/rides");
+  revalidatePath(`/rides/${ride.id}`);
   return { success: true, ride };
 }
