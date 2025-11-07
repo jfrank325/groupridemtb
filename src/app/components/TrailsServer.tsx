@@ -19,14 +19,18 @@ const TrailMap = dynamic(() => import("./TrailMap"), {
 
 export const TrailsServer = async () => {
 
-    const trailsData = await prisma.trail?.findMany({
+    const trailsData = await prisma.trail.findMany({
       include: {
         trailSystem: true,
       },
     });
     console.log({ trailsData })
     // Cast/map the Prisma JsonValue coordinates to the application's Trail type so the prop matches.
-    const trails: Trail[] = (trailsData ?? []).map((t) => ({
+    const trails: Trail[] = trailsData.map((t) => {
+      // Type assertion: elevationLossM exists in the schema and Prisma client
+      const trailWithElevationLoss = t as typeof t & { elevationLossM: number | null };
+      
+      return {
         id: t.id,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
@@ -35,7 +39,7 @@ export const TrailsServer = async () => {
         difficulty: t.difficulty,
         distanceKm: t.distanceKm,
         elevationGainM: t.elevationGainM,
-        elevationLossM: t.elevationLossM ?? null,
+        elevationLossM: trailWithElevationLoss.elevationLossM ?? null,
         description: t.description,
         trailSystemId: t.trailSystemId,
         lat: t.lat,
@@ -45,7 +49,8 @@ export const TrailsServer = async () => {
           id: t.trailSystem.id,
           name: t.trailSystem.name,
         } : null,
-    }));
+      };
+    });
 
 
     return (

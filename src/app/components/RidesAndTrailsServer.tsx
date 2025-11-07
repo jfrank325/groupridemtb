@@ -44,33 +44,38 @@ export const RidesAndTrailsServer = async () => {
   });
 
   // Fetch trails data
-  const trailsData = await prisma.trail?.findMany({
+  const trailsData = await prisma.trail.findMany({
     include: {
       trailSystem: true,
     },
   });
   
   // Cast/map the Prisma JsonValue coordinates to the application's Trail type
-  const trails: Trail[] = (trailsData ?? []).map((t) => ({
-    id: t.id,
-    createdAt: t.createdAt,
-    updatedAt: t.updatedAt,
-    name: t.name,
-    location: t.location,
-    difficulty: t.difficulty,
-    distanceKm: t.distanceKm,
-    elevationGainM: t.elevationGainM,
-    elevationLossM: t.elevationLossM ?? null,
-    description: t.description,
-    trailSystemId: t.trailSystemId,
-    lat: t.lat,
-    lng: t.lng,
-    coordinates: t.coordinates as unknown as Trail['coordinates'],
-    trailSystem: t.trailSystem ? {
-      id: t.trailSystem.id,
-      name: t.trailSystem.name,
-    } : null,
-  }));
+  const trails: Trail[] = trailsData.map((t) => {
+    // Type assertion: elevationLossM exists in the schema and Prisma client
+    const trailWithElevationLoss = t as typeof t & { elevationLossM: number | null };
+    
+    return {
+      id: t.id,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      name: t.name,
+      location: t.location,
+      difficulty: t.difficulty,
+      distanceKm: t.distanceKm,
+      elevationGainM: t.elevationGainM,
+      elevationLossM: trailWithElevationLoss.elevationLossM ?? null,
+      description: t.description,
+      trailSystemId: t.trailSystemId,
+      lat: t.lat,
+      lng: t.lng,
+      coordinates: t.coordinates as unknown as Trail['coordinates'],
+      trailSystem: t.trailSystem ? {
+        id: t.trailSystem.id,
+        name: t.trailSystem.name,
+      } : null,
+    };
+  });
 
   return <RidesAndTrailsClient rides={rides} trails={trails} />;
 };
