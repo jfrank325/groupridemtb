@@ -1,4 +1,6 @@
-import DOMPurify from "isomorphic-dompurify";
+const SCRIPT_STYLE_REGEX = /<(script|style)[\s\S]*?>[\s\S]*?<\/\1>/gi;
+const EVENT_HANDLER_REGEX = /on[a-z]+="[^"]*"/gi;
+const TAGS_REGEX = /<[^>]*>/g;
 
 /**
  * Sanitize HTML content to prevent XSS attacks
@@ -11,20 +13,19 @@ export function sanitizeHTML(dirty: string, allowHTML: boolean = false): string 
     return "";
   }
 
+  // Remove script/style blocks and inline event handlers
+  let cleaned = dirty
+    .replace(SCRIPT_STYLE_REGEX, "")
+    .replace(EVENT_HANDLER_REGEX, "");
+
   if (allowHTML) {
-    // Allow basic formatting HTML tags but sanitize dangerous content
-    return DOMPurify.sanitize(dirty, {
-      ALLOWED_TAGS: ["b", "i", "em", "strong", "p", "br", "a"],
-      ALLOWED_ATTR: ["href"],
-      ALLOW_DATA_ATTR: false,
-    });
-  } else {
-    // Strip all HTML tags (plain text mode)
-    return DOMPurify.sanitize(dirty, {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
+    return cleaned;
   }
+
+  // Strip remaining HTML tags for plain-text usage
+  cleaned = cleaned.replace(TAGS_REGEX, "");
+
+  return cleaned;
 }
 
 /**
