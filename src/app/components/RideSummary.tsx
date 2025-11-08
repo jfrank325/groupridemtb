@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+
 import { type Ride } from "../hooks/useRides";
 import { MessageForm } from "./MessageForm";
 import { useUser } from "../context/UserContext";
-import { useState, useEffect } from "react";
+import Modal from "./Modal";
 import { formatDate, formatTime, Recurrence } from "@/lib/utils";
 
 interface Message {
@@ -19,22 +22,48 @@ interface Message {
   };
 }
 
-export const RideSummary = ({ ride }: { ride: Ride }) => {
+interface RideSummaryProps {
+  ride: Ride;
+  onRideUpdate?: (ride: Ride) => void;
+}
+
+type JoinRideSuccess = {
+  id: string;
+  name: string | null;
+  date: string;
+  location: string | null;
+  trailNames: string[];
+  recurrence: string | null;
+};
+
+export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
+  const router = useRouter();
   const { session, user } = useUser();
+
   const [showMessageForm, setShowMessageForm] = useState(false);
   const [isMessagesCollapsed, setIsMessagesCollapsed] = useState(false);
   const [showAllMessages, setShowAllMessages] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  
+
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joinSuccess, setJoinSuccess] = useState<JoinRideSuccess | null>(null);
+
+  const [localRide, setLocalRide] = useState<Ride>(ride);
+
   const currentUserId = user?.id || null;
 
   useEffect(() => {
+    setLocalRide(ride);
+  }, [ride]);
+
+  useEffect(() => {
     async function fetchMessages() {
-      if (!ride?.id) return;
+      if (!localRide?.id) return;
       setLoadingMessages(true);
       try {
-        const res = await fetch(`/api/messages/ride/${ride.id}`);
+        const res = await fetch(`/api/messages/ride/${localRide.id}`);
         if (res.ok) {
           const data = await res.json();
           setMessages(data);
@@ -46,20 +75,14 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
       }
     }
     fetchMessages();
-  }, [ride?.id]);
-
-  const joinRide = () => {
-    // TODO: Implement join ride functionality
-  };
+  }, [localRide?.id]);
 
   const getRecipientIds = () => {
     const recipients: string[] = [];
-    // Add host if not the current user
-    if (ride.host && currentUserId && ride.host.id !== currentUserId) {
-      recipients.push(ride.host.id);
+    if (localRide.host && currentUserId && localRide.host.id !== currentUserId) {
+      recipients.push(localRide.host.id);
     }
-    // Add other attendees if not the current user
-    ride.attendees.forEach((attendee) => {
+    localRide.attendees.forEach((attendee) => {
       if (currentUserId && attendee.id !== currentUserId && !recipients.includes(attendee.id)) {
         recipients.push(attendee.id);
       }
@@ -69,9 +92,8 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
 
   const handleMessageSent = async () => {
     setShowMessageForm(false);
-    // Refresh messages immediately after sending
     try {
-      const res = await fetch(`/api/messages/ride/${ride.id}`);
+      const res = await fetch(`/api/messages/ride/${localRide.id}`);
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
@@ -81,51 +103,105 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
     }
   };
 
-  // Check if user has already joined the ride
-  const hasJoined = currentUserId && ride.attendees.some(attendee => attendee.id === currentUserId);
-  // Check if user is the host
-  const isHost = currentUserId && ride.host && ride.host.id === currentUserId;
-  // Show join button only if user is logged in, not the host, and hasn't joined
+  const hasJoined = useMemo(() => {
+    if (!currentUserId) {
+      return false;
+    }
+    return localRide.attendees.some((attendee) => attendee.id === currentUserId);
+  }, [currentUserId, localRide.attendees]);
+
+  const isHost = currentUserId && localRide.host && localRide.host.id === currentUserId;
   const showJoinButton = session && currentUserId && !isHost && !hasJoined;
   const visibleMessages = showAllMessages ? messages : messages.slice(-3);
+
   const recurrenceLabels: Record<Exclude<Recurrence, "none">, string> = {
     daily: "Daily",
     weekly: "Weekly",
     monthly: "Monthly",
     yearly: "Yearly",
   };
+
   const recurrenceLabel =
-    ride.recurrence && ride.recurrence !== "none"
-      ? recurrenceLabels[ride.recurrence as Exclude<Recurrence, "none">]
+    localRide.recurrence && localRide.recurrence !== "none"
+      ? recurrenceLabels[localRide.recurrence as Exclude<Recurrence, "none">]
+      : null;
+
+  const joinRide = async () => {
+    if (!localRide?.id) {
+      return;
+    }
+
+    if (!session) {
+      const callback = encodeURIComponent(`/rides/${localRide.id}`);
+      router.push(`/login?callbackUrl=${callback}&authMessage=create-ride`);
+      return;
+    }
+
+    setJoinLoading(true);
+    setJoinError(null);
+
+    try {
+      const res = await fetch(`/api/rides/${localRide.id}/join`, {
+        method: "PUT",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to join ride");
+      }
+
+      const updatedRide: Ride = data.ride;
+      setLocalRide(updatedRide);
+      onRideUpdate?.(updatedRide);
+      setJoinSuccess({
+        id: updatedRide.id,
+        name: updatedRide.name,
+        date: updatedRide.date,
+        location: updatedRide.location,
+        trailNames: updatedRide.trailNames,
+        recurrence: updatedRide.recurrence,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to join ride";
+      setJoinError(message);
+    } finally {
+      setJoinLoading(false);
+    }
+  };
+
+  const successRecurrenceLabel =
+    joinSuccess && joinSuccess.recurrence && joinSuccess.recurrence !== "none"
+      ? recurrenceLabels[joinSuccess.recurrence as Exclude<Recurrence, "none">]
       : null;
 
   return (
     <>
-      {ride && (
+      {localRide && (
         <div className="p-4 text-gray-700">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <h2 className="text-2xl font-semibold text-gray-900">
-              {ride.name || "Untitled Ride"}
+              {localRide.name || "Untitled Ride"}
             </h2>
             <Link
-              href={`/rides/${ride.id}`}
+              href={`/rides/${localRide.id}`}
               className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             >
               View Ride Details
             </Link>
           </div>
-          {ride.isExample && (
+          {localRide.isExample && (
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
               Example Ride
             </div>
           )}
           <p className="mb-2">
-            {formatDate(ride.date, { includeWeekday: true })} @ {formatTime(ride.date)}
+            {formatDate(localRide.date, { includeWeekday: true })} @ {formatTime(localRide.date)}
           </p>
-          {ride.location && (
+          {localRide.location && (
             <p className="mb-2 text-sm text-gray-600">
-              Location: <span className="font-medium text-gray-900">{ride.location}</span>
+              Location: <span className="font-medium text-gray-900">{localRide.location}</span>
             </p>
           )}
           {recurrenceLabel && (
@@ -133,9 +209,9 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
               Recurrence: <span className="font-medium text-gray-900">{recurrenceLabel}</span>
             </p>
           )}
-          {ride.host && (
+          {localRide.host && (
             <p className="mb-2">
-              Host: {ride.host.name}
+              Host: {localRide.host.name}
               {isHost && (
                 <span className="ml-2 text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
                   You
@@ -143,45 +219,50 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
               )}
             </p>
           )}
-          {ride.notes && (
-            <p className="mb-4">{ride.notes}</p>
+          {localRide.notes && (
+            <p className="mb-4">{localRide.notes}</p>
           )}
-          {(ride.trailNames.length > 0 || ride.location) && (
+          {(localRide.trailNames.length > 0 || localRide.location) && (
             <div className="mb-4">
               <h3 className="font-semibold mb-2">Route Details</h3>
-              {ride.trailNames.length > 0 && (
+              {localRide.trailNames.length > 0 && (
                 <ul className="list-disc list-inside mb-2">
-                  {ride.trailNames.map((trailName) => (
+                  {localRide.trailNames.map((trailName) => (
                     <li key={trailName}>{trailName}</li>
                   ))}
                 </ul>
               )}
-              {ride.trailNames.length === 0 && ride.location && (
+              {localRide.trailNames.length === 0 && localRide.location && (
                 <p className="text-sm text-gray-600">
-                  Meetup at <span className="font-medium text-gray-900">{ride.location}</span>
+                  Meetup at <span className="font-medium text-gray-900">{localRide.location}</span>
                 </p>
               )}
             </div>
           )}
           <p className="text-gray-600 mb-4">
-            Attendees: {ride.attendees.length}
+            Attendees: {localRide.attendees.length}
             {hasJoined && (
               <span className="ml-2 text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
                 You're attending
               </span>
             )}
           </p>
+          {joinError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+              {joinError}
+            </div>
+          )}
           {showJoinButton && (
             <div className="flex gap-2 flex-wrap mb-4">
-              <button 
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium" 
-                onClick={() => joinRide()}
+              <button
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:cursor-not-allowed disabled:bg-emerald-400"
+                onClick={joinRide}
+                disabled={joinLoading}
               >
-                Join Ride
+                {joinLoading ? "Joining..." : "Join Ride"}
               </button>
             </div>
           )}
-          {/* Messages Section */}
           {session && (
             <div className="mt-6 border-t border-gray-200 pt-6">
               <div className="mb-4 flex items-center justify-between">
@@ -194,11 +275,13 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
               </div>
 
               {!isMessagesCollapsed && (
-                <div id={`ride-messages-${ride.id}`}>
+                <div id={`ride-messages-${localRide.id}`}>
                   {loadingMessages ? (
                     <div className="text-center py-4 text-gray-500">Loading messages...</div>
                   ) : messages.length === 0 ? (
-                    <div className="text-center py-4 text-gray-500">No messages yet. Start the conversation!</div>
+                    <div className="text-center py-4 text-gray-500">
+                      No messages yet. Start the conversation!
+                    </div>
                   ) : (
                     <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
                       {visibleMessages.map((message) => {
@@ -215,8 +298,13 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
                                   : "bg-gray-100 text-gray-900 border border-gray-200"
                               }`}
                             >
-                              <div className={`text-xs mb-1 ${isSender ? 'text-white opacity-90' : 'text-gray-600'}`}>
-                                {message.sender.name} • {formatDate(message.createdAt, { includeTime: true, hour12: true })}
+                              <div
+                                className={`text-xs mb-1 ${
+                                  isSender ? "text-white/90" : "text-gray-600"
+                                }`}
+                              >
+                                {message.sender.name} •{" "}
+                                {formatDate(message.createdAt, { includeTime: true, hour12: true })}
                               </div>
                               <div className="break-words">{message.content}</div>
                             </div>
@@ -233,7 +321,9 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
                         className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors text-sm"
                         onClick={() => setShowAllMessages(!showAllMessages)}
                       >
-                        {showAllMessages ? "Show recent messages" : `Show older messages (${messages.length - 3})`}
+                        {showAllMessages
+                          ? "Show recent messages"
+                          : `Show older messages (${messages.length - 3})`}
                       </button>
                     </div>
                   )}
@@ -252,8 +342,8 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
                       </div>
                       <MessageForm
                         recipientIds={getRecipientIds()}
-                        rideId={ride.id}
-                        label={`Ride: ${ride.name || "Untitled Ride"}`}
+                        rideId={localRide.id}
+                        label={`Ride: ${localRide.name || "Untitled Ride"}`}
                         onSent={handleMessageSent}
                         placeholder="Ask a question or share information about this ride..."
                       />
@@ -261,8 +351,8 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
                   )}
 
                   {!showMessageForm && (
-                    <button 
-                      className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium" 
+                    <button
+                      className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
                       onClick={() => {
                         setIsMessagesCollapsed(false);
                         setShowMessageForm(true);
@@ -277,6 +367,65 @@ export const RideSummary = ({ ride }: { ride: Ride }) => {
           )}
         </div>
       )}
+
+      <Modal isOpen={!!joinSuccess} onClose={() => setJoinSuccess(null)}>
+        {joinSuccess && (
+          <div className="space-y-4 text-gray-800">
+            <div>
+              <h3 className="text-xl font-semibold text-emerald-700">You're in!</h3>
+              <p className="text-sm text-gray-600">
+                You've been added to{" "}
+                <span className="font-medium text-gray-900">
+                  {joinSuccess.name || "this ride"}
+                </span>.
+              </p>
+            </div>
+            <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+              <p>
+                <span className="font-medium text-gray-900">Date:</span>{" "}
+                {formatDate(joinSuccess.date, { includeWeekday: true })}
+              </p>
+              <p>
+                <span className="font-medium text-gray-900">Time:</span>{" "}
+                {formatTime(joinSuccess.date)}
+              </p>
+              {joinSuccess.location && (
+                <p>
+                  <span className="font-medium text-gray-900">Location:</span>{" "}
+                  {joinSuccess.location}
+                </p>
+              )}
+              {joinSuccess.trailNames.length > 0 && (
+                <p>
+                  <span className="font-medium text-gray-900">Trails:</span>{" "}
+                  {joinSuccess.trailNames.join(", ")}
+                </p>
+              )}
+              {successRecurrenceLabel && (
+                <p>
+                  <span className="font-medium text-gray-900">Recurrence:</span>{" "}
+                  {successRecurrenceLabel}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setJoinSuccess(null)}
+                className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Close
+              </button>
+              <Link
+                href={`/rides/${joinSuccess.id}`}
+                className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+              >
+                View Ride Details
+              </Link>
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   );
-}
+};

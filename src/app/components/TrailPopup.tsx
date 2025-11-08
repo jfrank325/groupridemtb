@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import maplibregl from "maplibre-gl";
 import { Trail } from "../hooks/useTrails";
 import Link from "next/link";
 import { useUser } from "@/app/context/UserContext";
-import { formatDistance, formatElevation, formatDate } from "@/lib/utils";
+import Modal from "./Modal";
+import { formatDistance, formatElevation, formatDate, formatTime, Recurrence } from "@/lib/utils";
 
 interface TrailPopupProps {
     trail: Partial<Trail>;
@@ -17,10 +19,21 @@ interface Ride {
     name: string | null;
     notes: string | null;
     host: { id: string; name: string } | null;
-    attendees: Array<{ user: { id: string; name: string } }>;
+    attendees: Array<{ id: string; name: string }>;
     location: string | null;
     recurrence?: string | null;
+    trailNames: string[];
+    trails: Array<{ trail: { id: string; name: string } | null }>;
 }
+
+type JoinRideSuccess = {
+    id: string;
+    name: string | null;
+    date: string;
+    location: string | null;
+    trailNames: string[];
+    recurrence: string | null;
+};
 
 const difficultyColors = {
     Easy: "bg-green-100 text-green-700 border-green-200",
@@ -28,12 +41,63 @@ const difficultyColors = {
     Advanced: "bg-red-100 text-red-700 border-red-200",
 };
 
+const normalizeRide = (ride: any): Ride => {
+    const attendees = Array.isArray(ride.attendees)
+        ? ride.attendees.map((entry: any) => ({
+            id: entry?.user?.id ?? entry?.id ?? "",
+            name: entry?.user?.name ?? entry?.name ?? "Rider",
+        })).filter((attendee: { id: string }) => attendee.id)
+        : [];
+
+    const host = ride.host ? { id: ride.host.id, name: ride.host.name } : null;
+
+    const trails: Array<{ trail: { id: string; name: string } | null }> = Array.isArray(ride.trails)
+        ? ride.trails.map((rt: any) => ({
+            trail: rt?.trail
+                ? { id: rt.trail.id, name: rt.trail.name }
+                : rt
+                    ? { id: rt.id ?? "", name: rt.name ?? "Trail" }
+                    : null,
+        }))
+        : Array.isArray(ride.trailIds)
+            ? ride.trailIds.map((id: string, index: number) => ({
+                trail: {
+                    id,
+                    name: Array.isArray(ride.trailNames) ? ride.trailNames[index] ?? "Trail" : "Trail",
+                },
+            }))
+            : [];
+
+    const trailNames = trails
+        .map((entry) => entry.trail?.name)
+        .filter((name): name is string => Boolean(name));
+
+    return {
+        id: ride.id,
+        date: typeof ride.date === "string" ? ride.date : new Date(ride.date).toISOString(),
+        name: ride.name ?? null,
+        notes: ride.notes ?? null,
+        host,
+        attendees,
+        location: ride.location ?? null,
+        recurrence: ride.recurrence ?? "none",
+        trailNames,
+        trails,
+    };
+};
+
 export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
     const [rides, setRides] = useState<Ride[]>([]);
     const [loading, setLoading] = useState(true);
-    const { session } = useUser();
+    const [error, setError] = useState<string | null>(null);
+    const [joinSuccess, setJoinSuccess] = useState<JoinRideSuccess | null>(null);
+    const [joinLoading, setJoinLoading] = useState(false);
+    const [pendingRideId, setPendingRideId] = useState<string | null>(null);
+    const { session, user } = useUser();
+    const router = useRouter();
 
     const trailId = trail.id;
+    const currentUserId = user?.id || null;
 
     const createRideHref = useMemo(() => {
         if (!trailId) return "/rides/new";
@@ -46,6 +110,18 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
 
     const trailDetailPath = trailId ? `/trails/${trailId}` : "/trails";
 
+    const recurrenceLabels: Record<Exclude<Recurrence, "none">, string> = {
+        daily: "Daily",
+        weekly: "Weekly",
+        monthly: "Monthly",
+        yearly: "Yearly",
+    };
+
+    const successRecurrenceLabel =
+        joinSuccess && joinSuccess.recurrence && joinSuccess.recurrence !== "none"
+            ? recurrenceLabels[joinSuccess.recurrence as Exclude<Recurrence, "none">]
+            : null;
+
     useEffect(() => {
         if (!trailId) {
             setLoading(false);
@@ -54,16 +130,19 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
 
         async function fetchRides() {
             try {
+                setError(null);
                 const res = await fetch(`/api/rides/by-trail?trailId=${trailId}`);
                 if (!res.ok) throw new Error("Failed to fetch rides");
                 const data = await res.json();
-                // Filter to only future rides and sort by date
-                const futureRides = data
-                    .filter((ride: Ride) => new Date(ride.date) > new Date())
-                    .sort((a: Ride, b: Ride) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                const normalized: Ride[] = Array.isArray(data) ? data.map((rideData: any) => normalizeRide(rideData)) : [];
+                const now = new Date();
+                const futureRides = normalized
+                    .filter((ride) => new Date(ride.date) > now)
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 setRides(futureRides);
             } catch (err) {
                 console.error(err);
+                setError(err instanceof Error ? err.message : "Failed to load rides");
             } finally {
                 setLoading(false);
             }
@@ -74,26 +153,64 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
 
     const joinRide = async (rideId: string) => {
         if (!trailId) return;
-        
+
+        if (!session) {
+            const callback = encodeURIComponent(`/rides/${rideId}`);
+            router.push(`/login?callbackUrl=${callback}&authMessage=create-ride`);
+            return;
+        }
+
+        setJoinLoading(true);
+        setPendingRideId(rideId);
+        setError(null);
+
         try {
-            const res = await fetch(`/api/rides/${rideId}/join`, { method: 'PUT' });
-            if (!res.ok) throw new Error("Failed to join ride");
-            // Refresh rides after joining
-            const refreshRes = await fetch(`/api/rides/by-trail?trailId=${trailId}`);
-            if (refreshRes.ok) {
-                const data = await refreshRes.json();
-                const futureRides = data
-                    .filter((ride: Ride) => new Date(ride.date) > new Date())
-                    .sort((a: Ride, b: Ride) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                setRides(futureRides);
+            const res = await fetch(`/api/rides/${rideId}/join`, { method: "PUT" });
+            const data = await res.json().catch(() => ({}));
+
+            if (res.status === 401) {
+                const callback = encodeURIComponent(`/rides/${rideId}`);
+                router.push(`/login?callbackUrl=${callback}&authMessage=create-ride`);
+                return;
             }
+
+            if (!res.ok) {
+                throw new Error(data?.error || "Failed to join ride");
+            }
+
+            const normalized = normalizeRide(data.ride);
+            const now = new Date();
+
+            setRides((prev) => {
+                const existing = prev.some((ride) => ride.id === normalized.id);
+                const updated = existing
+                    ? prev.map((ride) => (ride.id === normalized.id ? normalized : ride))
+                    : [...prev, normalized];
+                return updated
+                    .filter((ride) => new Date(ride.date) > now)
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            });
+
+            setJoinSuccess({
+                id: normalized.id,
+                name: normalized.name,
+                date: normalized.date,
+                location: normalized.location,
+                trailNames: normalized.trailNames,
+                recurrence: normalized.recurrence ?? "none",
+            });
         } catch (err) {
             console.error(err);
+            setError(err instanceof Error ? err.message : "Failed to join ride");
+        } finally {
+            setJoinLoading(false);
+            setPendingRideId(null);
         }
     };
 
 
     return (
+        <>
         <div 
             className="absolute z-10 bg-white rounded-xl border border-gray-200 shadow-xl max-w-lg w-[90vw] max-h-[85vh] overflow-y-auto"
             style={{
@@ -203,6 +320,11 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                             </Link>
                         )}
                     </div>
+                    {error && (
+                        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                            {error}
+                        </div>
+                    )}
                     {loading ? (
                         <div className="text-center py-4 text-gray-500 text-sm">Loading rides...</div>
                     ) : rides.length === 0 ? (
@@ -211,66 +333,86 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                         </div>
                     ) : (
                         <div className="space-y-3 mb-4">
-                            {rides.map((ride) => (
-                                <div
-                                    key={ride.id}
-                                    className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:border-emerald-300 transition-colors"
-                                >
-                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                        <div className="flex-1">
-                                            <p className="font-medium text-gray-900">
-                                                {ride.name || "Group Ride"}
-                                            </p>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                {formatDate(ride.date, { includeWeekday: true, includeTime: true, hour12: true })}
-                                            </p>
-                                            {ride.location && (
+                            {rides.map((ride) => {
+                                const isAttending = ride.attendees.some((attendee) => attendee.id === currentUserId);
+                                const isHost = ride.host?.id === currentUserId;
+                                const attendeeCount = ride.attendees.length + (ride.host ? 1 : 0);
+                                const joinDisabled = joinLoading && pendingRideId === ride.id;
+
+                                return (
+                                    <div
+                                        key={ride.id}
+                                        className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:border-emerald-300 transition-colors"
+                                    >
+                                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="font-medium text-gray-900">
+                                                        {ride.name || "Group Ride"}
+                                                    </p>
+                                                    {isHost && (
+                                                        <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">
+                                                            Your Ride
+                                                        </span>
+                                                    )}
+                                                    {!isHost && isAttending && (
+                                                        <span className="px-2.5 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">
+                                                            You're attending
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {formatDate(ride.date, { includeWeekday: true, includeTime: true, hour12: true })}
+                                                </p>
+                                                {ride.location && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Meetup: <span className="font-medium text-gray-900">{ride.location}</span>
+                                                    </p>
+                                                )}
+                                                {ride.host && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Hosted by {ride.host.name}
+                                                    </p>
+                                                )}
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    Meetup: <span className="font-medium text-gray-900">{ride.location}</span>
+                                                    {attendeeCount} {attendeeCount === 1 ? "rider" : "riders"}
                                                 </p>
-                                            )}
-                                            {ride.host && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Hosted by {ride.host.name}
-                                                </p>
-                                            )}
-                                            {ride.attendees && ride.attendees.length > 0 && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {ride.attendees.length} {ride.attendees.length === 1 ? 'rider' : 'riders'} attending
-                                                </p>
-                                            )}
-                                            {ride.notes && (
-                                                <p className="text-sm text-gray-700 mt-3 border-t border-gray-200 pt-2">
-                                                    {ride.notes}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col gap-2 md:items-end">
-                                            {session ? (
-                                                <button
-                                                    onClick={() => joinRide(ride.id)}
-                                                    className="w-full md:w-auto border-2 border-emerald-600 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 hover:border-emerald-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-sm"
-                                                >
-                                                    Join Ride
-                                                </button>
-                                            ) : (
+                                                {ride.notes && (
+                                                    <p className="text-sm text-gray-700 mt-3 border-t border-gray-200 pt-2">
+                                                        {ride.notes}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col gap-2 md:items-end">
+                                                {session ? (
+                                                    !isHost && !isAttending ? (
+                                                        <button
+                                                            onClick={() => joinRide(ride.id)}
+                                                            disabled={joinDisabled}
+                                                            className="w-full md:w-auto border-2 border-emerald-600 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 hover:border-emerald-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 font-medium text-sm disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300"
+                                                        >
+                                                            {joinDisabled ? "Joining..." : "Join Ride"}
+                                                        </button>
+                                                    ) : null
+                                                ) : (
+                                                    <Link
+                                                        href={`/login?callbackUrl=${encodeURIComponent(`/rides/${ride.id}`)}&authMessage=create-ride`}
+                                                        className="w-full md:w-auto inline-flex items-center justify-center border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 rounded-lg hover:bg-emerald-50"
+                                                    >
+                                                        Sign in to Join
+                                                    </Link>
+                                                )}
                                                 <Link
-                                                    href={`/login?callbackUrl=${encodeURIComponent(`/rides/${ride.id}`)}&authMessage=create-ride`}
-                                                    className="w-full md:w-auto inline-flex items-center justify-center border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 rounded-lg hover:bg-emerald-50"
+                                                    href={`/rides/${ride.id}`}
+                                                    className="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
                                                 >
-                                                    Sign in to Join
+                                                    View Ride Details
                                                 </Link>
-                                            )}
-                                            <Link
-                                                href={`/rides/${ride.id}`}
-                                                className="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                                            >
-                                                View Ride Details
-                                            </Link>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                     {trailId && (
@@ -289,5 +431,64 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                 </div>
             </div>
         </div>
+        <Modal isOpen={!!joinSuccess} onClose={() => setJoinSuccess(null)}>
+            {joinSuccess && (
+                <div className="space-y-4 text-gray-800">
+                    <div>
+                        <h3 className="text-xl font-semibold text-emerald-700">Ride joined successfully</h3>
+                        <p className="text-sm text-gray-600">
+                            You're now attending{" "}
+                            <span className="font-medium text-gray-900">
+                                {joinSuccess.name || "this ride"}
+                            </span>.
+                        </p>
+                    </div>
+                    <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+                        <p>
+                            <span className="font-medium text-gray-900">Date:</span>{" "}
+                            {formatDate(joinSuccess.date, { includeWeekday: true })}
+                        </p>
+                        <p>
+                            <span className="font-medium text-gray-900">Time:</span>{" "}
+                            {formatTime(joinSuccess.date)}
+                        </p>
+                        {joinSuccess.location && (
+                            <p>
+                                <span className="font-medium text-gray-900">Location:</span>{" "}
+                                {joinSuccess.location}
+                            </p>
+                        )}
+                        {joinSuccess.trailNames.length > 0 && (
+                            <p>
+                                <span className="font-medium text-gray-900">Trails:</span>{" "}
+                                {joinSuccess.trailNames.join(", ")}
+                            </p>
+                        )}
+                        {successRecurrenceLabel && (
+                            <p>
+                                <span className="font-medium text-gray-900">Recurrence:</span>{" "}
+                                {successRecurrenceLabel}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                        <button
+                            type="button"
+                            onClick={() => setJoinSuccess(null)}
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                            Close
+                        </button>
+                        <Link
+                            href={`/rides/${joinSuccess.id}`}
+                            className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+                        >
+                            View Ride Details
+                        </Link>
+                    </div>
+                </div>
+            )}
+        </Modal>
+        </>
     );
 }

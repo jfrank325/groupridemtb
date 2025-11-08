@@ -1,7 +1,7 @@
 "use client"
 
-import { useRides, type Ride } from "../hooks/useRides";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { type Ride } from "../hooks/useRides";
 import Modal from "./Modal";
 import { RideSummary } from "./RideSummary";
 import { formatDateShort, formatTime } from "@/lib/utils";
@@ -15,16 +15,28 @@ interface RidesListProps {
 
 export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] }: RidesListProps) => {
     const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
+    const [internalRides, setInternalRides] = useState<Ride[]>(rides);
+
+    useEffect(() => {
+        setInternalRides(rides);
+    }, [rides]);
+
+    const handleRideUpdate = (updatedRide: Ride) => {
+        setInternalRides((prevRides) =>
+            prevRides.map((ride) => (ride.id === updatedRide.id ? { ...ride, ...updatedRide } : ride))
+        );
+        setSelectedRide(updatedRide);
+    };
 
     return (
         <section className="w-full lg:w-1/2">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{title}</h2>
                 <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                    {rides.length} {rides.length === 1 ? 'ride' : 'rides'}
+                    {internalRides.length} {internalRides.length === 1 ? 'ride' : 'rides'}
                 </span>
             </div>
-            {rides.length === 0 ? (
+            {internalRides.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <svg 
                         className="w-16 h-16 mx-auto text-gray-300 mb-4" 
@@ -39,7 +51,7 @@ export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] 
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {rides.map((ride) => {
+                    {internalRides.map((ride) => {
                         const isHighlighted = highlightedRideIds.includes(ride.id);
                         return (
                             <button
@@ -155,7 +167,7 @@ export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] 
                 </div>
             )}
             <Modal isOpen={!!selectedRide} onClose={() => setSelectedRide(null)}>
-                {selectedRide && <RideSummary ride={selectedRide} />}
+                {selectedRide && <RideSummary ride={selectedRide} onRideUpdate={handleRideUpdate} />}
             </Modal>
         </section>
     )

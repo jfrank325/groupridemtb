@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useUser } from "@/app/context/UserContext";
-import { formatDate } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
-interface Ride {
+import { useUser } from "@/app/context/UserContext";
+import Modal from "./Modal";
+import { formatDate, formatTime, Recurrence } from "@/lib/utils";
+
+interface RawRide {
   id: string;
   date: string;
   name: string | null;
@@ -34,9 +37,70 @@ interface Ride {
   recurrence?: string | null;
 }
 
+interface Ride {
+  id: string;
+  date: string;
+  name: string | null;
+  notes: string | null;
+  host: { id: string; name: string } | null;
+  attendees: Array<{ id: string; name: string }>;
+  trails: Array<{ trail: { id: string; name: string } | null }>;
+  location: string | null;
+  recurrence: string | null;
+}
+
+type JoinRideSuccess = {
+  id: string;
+  name: string | null;
+  date: string;
+  location: string | null;
+  trailNames: string[];
+  recurrence: string | null;
+};
+
+const normalizeRide = (ride: RawRide | any): Ride => {
+  const attendees = Array.isArray(ride.attendees)
+    ? ride.attendees
+        .map((entry: any) => ({
+          id: entry?.user?.id ?? entry?.id ?? "",
+          name: entry?.user?.name ?? entry?.name ?? "Rider",
+        }))
+        .filter((attendee: { id: string }) => attendee.id)
+    : [];
+
+  const trails: Array<{ trail: { id: string; name: string } | null }> = Array.isArray(ride.trails)
+    ? ride.trails.map((rt: any) => ({
+        trail: rt?.trail
+          ? { id: rt.trail.id, name: rt.trail.name }
+          : rt
+            ? { id: rt.id ?? "", name: rt.name ?? "Trail" }
+            : null,
+      }))
+    : Array.isArray(ride.trailIds)
+      ? ride.trailIds.map((id: string, index: number) => ({
+          trail: {
+            id,
+            name: Array.isArray(ride.trailNames) ? ride.trailNames[index] ?? "Trail" : "Trail",
+          },
+        }))
+      : [];
+
+  return {
+    id: ride.id,
+    date: typeof ride.date === "string" ? ride.date : new Date(ride.date).toISOString(),
+    name: ride.name ?? null,
+    notes: ride.notes ?? null,
+    host: ride.host ? { id: ride.host.id, name: ride.host.name } : null,
+    attendees,
+    trails,
+    location: ride.location ?? null,
+    recurrence: ride.recurrence ?? "none",
+  };
+};
+
 interface TrailsTrailDetailClientProps {
   trailId: string;
-  initialRides: Ride[];
+  initialRides: RawRide[];
 }
 
 export function TrailsTrailDetailClient({
@@ -44,19 +108,50 @@ export function TrailsTrailDetailClient({
   initialRides,
 }: TrailsTrailDetailClientProps) {
   const { session, user } = useUser();
-  const [rides, setRides] = useState<Ride[]>(initialRides);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [rides, setRides] = useState<Ride[]>(() =>
+    (initialRides || [])
+      .map((ride) => normalizeRide(ride))
+      .filter((ride) => new Date(ride.date) > new Date())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  );
   const [error, setError] = useState<string | null>(null);
-  
+  const [joinSuccess, setJoinSuccess] = useState<JoinRideSuccess | null>(null);
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [pendingRideId, setPendingRideId] = useState<string | null>(null);
+
   const currentUserId = user?.id || null;
+
+  useEffect(() => {
+    setRides(
+      (initialRides || [])
+        .map((ride) => normalizeRide(ride))
+        .filter((ride) => new Date(ride.date) > new Date())
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    );
+  }, [initialRides]);
+
+  const recurrenceLabels: Record<Exclude<Recurrence, "none">, string> = {
+    daily: "Daily",
+    weekly: "Weekly",
+    monthly: "Monthly",
+    yearly: "Yearly",
+  };
+
+  const successRecurrenceLabel =
+    joinSuccess && joinSuccess.recurrence && joinSuccess.recurrence !== "none"
+      ? recurrenceLabels[joinSuccess.recurrence as Exclude<Recurrence, "none">]
+      : null;
 
   const joinRide = async (rideId: string) => {
     if (!session) {
-      setError("Please log in to join rides");
+      const callback = encodeURIComponent(`/rides/${rideId}`);
+      router.push(`/login?callbackUrl=${callback}&authMessage=create-ride`);
       return;
     }
 
-    setLoading(true);
+    setJoinLoading(true);
+    setPendingRideId(rideId);
     setError(null);
 
     try {
@@ -64,33 +159,54 @@ export function TrailsTrailDetailClient({
         method: "PUT",
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to join ride");
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        const callback = encodeURIComponent(`/rides/${rideId}`);
+        router.push(`/login?callbackUrl=${callback}&authMessage=create-ride`);
+        return;
       }
 
-      // Refresh rides list
-      const refreshRes = await fetch(`/api/rides/by-trail?trailId=${trailId}`);
-      if (refreshRes.ok) {
-        const data = await refreshRes.json();
-        const futureRides = data
-          .filter((ride: Ride) => new Date(ride.date) > new Date())
-          .sort(
-            (a: Ride, b: Ride) =>
-              new Date(a.date).getTime() - new Date(b.date).getTime()
-          );
-        setRides(futureRides);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to join ride");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to join ride");
+
+      const normalized = normalizeRide(data.ride);
+      const now = new Date();
+
+      setRides((prev) => {
+        const exists = prev.some((ride) => ride.id === normalized.id);
+        const updated = exists
+          ? prev.map((ride) => (ride.id === normalized.id ? normalized : ride))
+          : [...prev, normalized];
+
+        return updated
+          .filter((ride) => new Date(ride.date) > now)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      });
+
+      setJoinSuccess({
+        id: normalized.id,
+        name: normalized.name,
+        date: normalized.date,
+        location: normalized.location,
+        trailNames: normalized.trails
+          .map((entry) => entry.trail?.name)
+          .filter((name): name is string => Boolean(name)),
+        recurrence: normalized.recurrence,
+      });
+    } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : "Failed to join ride");
     } finally {
-      setLoading(false);
+      setJoinLoading(false);
+      setPendingRideId(null);
     }
   };
 
 
   return (
+    <>
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Upcoming Rides</h2>
@@ -167,10 +283,14 @@ export function TrailsTrailDetailClient({
       ) : (
         <div className="space-y-4">
           {rides.map((ride) => {
-            const isAttending = ride.attendees.some(
-              (a) => a.user.id === currentUserId
-            );
-            const isHost = ride.host.id === currentUserId;
+            const isAttending = ride.attendees.some((attendee) => attendee.id === currentUserId);
+            const isHost = ride.host?.id === currentUserId;
+            const attendeeCount = ride.attendees.length + (ride.host ? 1 : 0);
+            const joinDisabled = joinLoading && pendingRideId === ride.id;
+            const rideRecurrenceLabel =
+              ride.recurrence && ride.recurrence !== "none"
+                ? recurrenceLabels[ride.recurrence as Exclude<Recurrence, "none">]
+                : null;
 
             return (
               <div
@@ -179,30 +299,39 @@ export function TrailsTrailDetailClient({
               >
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
                           {formatDate(ride.date, { includeWeekday: true, includeTime: true, hour12: true })}
                         </h3>
-                        <p className="text-sm text-gray-600">
-                          Hosted by {ride.host.name}
-                        </p>
-                          {ride.location && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Meetup: <span className="font-medium text-gray-900">{ride.location}</span>
-                            </p>
-                          )}
+                        {ride.host && (
+                          <p className="text-sm text-gray-600">
+                            Hosted by {ride.host.name}
+                          </p>
+                        )}
+                        {ride.location && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Meetup: <span className="font-medium text-gray-900">{ride.location}</span>
+                          </p>
+                        )}
+                        {rideRecurrenceLabel && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Recurs: <span className="font-medium text-gray-900">{rideRecurrenceLabel}</span>
+                          </p>
+                        )}
                       </div>
-                      {isHost && (
-                        <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">
-                          Your Ride
-                        </span>
-                      )}
-                      {isAttending && !isHost && (
-                        <span className="px-2.5 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">
-                          Attending
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-2">
+                        {isHost && (
+                          <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">
+                            Your Ride
+                          </span>
+                        )}
+                        {!isHost && isAttending && (
+                          <span className="px-2.5 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">
+                            You're attending
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {ride.notes && (
@@ -226,12 +355,9 @@ export function TrailsTrailDetailClient({
                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                           />
                         </svg>
-                        {ride.attendees.length + 1}{" "}
-                        {ride.attendees.length + 1 === 1
-                          ? "rider"
-                          : "riders"}
+                        {attendeeCount} {attendeeCount === 1 ? "rider" : "riders"}
                       </div>
-                      {ride.trails.length > 1 && (
+                      {ride.trails.length > 0 && (
                         <div className="flex items-center">
                           <svg
                             className="w-4 h-4 mr-1"
@@ -246,7 +372,7 @@ export function TrailsTrailDetailClient({
                               d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
                             />
                           </svg>
-                          {ride.trails.length} trails
+                          {ride.trails.length} {ride.trails.length === 1 ? "trail" : "trails"}
                         </div>
                       )}
                     </div>
@@ -257,10 +383,10 @@ export function TrailsTrailDetailClient({
                       !isHost && !isAttending ? (
                         <button
                           onClick={() => joinRide(ride.id)}
-                          disabled={loading}
+                          disabled={joinDisabled}
                           className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 whitespace-nowrap"
                         >
-                          {loading ? "Joining..." : "Join Ride"}
+                          {joinDisabled ? "Joining..." : "Join Ride"}
                         </button>
                       ) : null
                     ) : (
@@ -285,5 +411,64 @@ export function TrailsTrailDetailClient({
         </div>
       )}
     </div>
+    <Modal isOpen={!!joinSuccess} onClose={() => setJoinSuccess(null)}>
+      {joinSuccess && (
+        <div className="space-y-4 text-gray-800">
+          <div>
+            <h3 className="text-xl font-semibold text-emerald-700">You're signed up!</h3>
+            <p className="text-sm text-gray-600">
+              You’re now attending{" "}
+              <span className="font-medium text-gray-900">
+                {joinSuccess.name || "this ride"}
+              </span>.
+            </p>
+          </div>
+          <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+            <p>
+              <span className="font-medium text-gray-900">Date:</span>{" "}
+              {formatDate(joinSuccess.date, { includeWeekday: true })}
+            </p>
+            <p>
+              <span className="font-medium text-gray-900">Time:</span>{" "}
+              {formatTime(joinSuccess.date)}
+            </p>
+            {joinSuccess.location && (
+              <p>
+                <span className="font-medium text-gray-900">Location:</span>{" "}
+                {joinSuccess.location}
+              </p>
+            )}
+            {joinSuccess.trailNames.length > 0 && (
+              <p>
+                <span className="font-medium text-gray-900">Trails:</span>{" "}
+                {joinSuccess.trailNames.join(", ")}
+              </p>
+            )}
+            {successRecurrenceLabel && (
+              <p>
+                <span className="font-medium text-gray-900">Recurrence:</span>{" "}
+                {successRecurrenceLabel}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setJoinSuccess(null)}
+              className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Close
+            </button>
+            <Link
+              href={`/rides/${joinSuccess.id}`}
+              className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+            >
+              View Ride Details
+            </Link>
+          </div>
+        </div>
+      )}
+    </Modal>
+    </>
   );
 }
