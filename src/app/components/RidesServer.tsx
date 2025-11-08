@@ -18,7 +18,15 @@ export const RidesServer = async () => {
         host: { select: { id: true, name: true } },
     } as const;
 
-    const ridesData = await prisma.ride.findMany({ include: rideInclude });
+    const ridesData = await prisma.ride.findMany({
+        where: {
+            date: {
+                gt: new Date(),
+            },
+        },
+        orderBy: { date: "asc" },
+        include: rideInclude,
+    });
 
     const now = new Date();
     const normalizedRidesData = await Promise.all(
@@ -36,7 +44,9 @@ export const RidesServer = async () => {
         })
     );
 
-    const rides: Ride[] = normalizedRidesData.map((ride) => {
+    const rides: Ride[] = normalizedRidesData
+        .filter((ride) => ride.date > now)
+        .map((ride) => {
         const rideTrails = ride.trails.map((rt) => rt.trail);
         const location = (ride as typeof ride & { location?: string | null }).location ?? null;
         return {

@@ -97,24 +97,26 @@ export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] 
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex-shrink-0 self-start">
-                                        <span
-                                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                                                ride.role === "host"
-                                                    ? "bg-emerald-100 text-emerald-700"
-                                                    : "bg-slate-100 text-slate-600"
-                                            }`}
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                {ride.role === "host" ? (
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c1.657 0 3-1.567 3-3.5S13.657 1 12 1 9 2.567 9 4.5 10.343 8 12 8zm0 2c-3.314 0-6 2.462-6 5.5V19a2 2 0 002 2h8a2 2 0 002-2v-3.5c0-3.038-2.686-5.5-6-5.5z" />
-                                                ) : (
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                )}
-                                            </svg>
-                                            {ride.role === "host" ? "You're hosting" : "You're attending"}
-                                        </span>
-                                    </div>
+                                    {ride.role && (
+                                        <div className="flex-shrink-0 self-start">
+                                            <span
+                                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                                                    ride.role === "host"
+                                                        ? "bg-emerald-100 text-emerald-700"
+                                                        : "bg-slate-100 text-slate-600"
+                                                }`}
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    {ride.role === "host" ? (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c1.657 0 3-1.567 3-3.5S13.657 1 12 1 9 2.567 9 4.5 10.343 8 12 8zm0 2c-3.314 0-6 2.462-6 5.5V19a2 2 0 002 2h8a2 2 0 002-2v-3.5c0-3.038-2.686-5.5-6-5.5z" />
+                                                    ) : (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    )}
+                                                </svg>
+                                                {ride.role === "host" ? "You're hosting" : "You're attending"}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-gray-100">
                                     <div className="flex flex-wrap items-center gap-2">

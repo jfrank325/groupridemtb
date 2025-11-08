@@ -40,8 +40,10 @@ export async function cancelRide(rideId: string) {
 
   await prisma.ride.delete({ where: { id: rideId } });
 
+  revalidatePath("/");
   revalidatePath("/rides");
   revalidatePath(`/rides/${rideId}`);
+  revalidatePath("/profile");
   revalidatePath("/trails");
 
   return { success: true };
