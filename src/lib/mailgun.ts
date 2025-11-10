@@ -74,3 +74,7 @@ export async function sendMessageNotificationEmail(args: SendLocalRideAlertArgs)
   return sendMailgunMessage(args);
 }
 
+export async function sendHostJoinNotificationEmail(args: SendLocalRideAlertArgs): Promise<boolean> {
+  return sendMailgunMessage(args);
+}
+

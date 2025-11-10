@@ -6,6 +6,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime, getNextRecurringDate, Recurrence } from "@/lib/utils";
 import { ShareRideButton } from "@/app/components/ShareRideButton";
+import { RideAttendanceActions } from "@/app/components/RideAttendanceActions";
 
 export default async function RideDetailPage({
   params,
@@ -98,6 +99,9 @@ export default async function RideDetailPage({
   const rideLocation = (ride as { location?: string | null }).location ?? null;
   const trailDetails = ride.trails.map((entry) => entry.trail);
   const attendeeUsers = ride.attendees.map((attendee) => attendee.user);
+  const isAttending = currentUserId
+    ? attendeeUsers.some((user) => user.id === currentUserId)
+    : false;
 
   const baseSiteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
@@ -107,6 +111,8 @@ export default async function RideDetailPage({
   const shareDescription = rideLocation
     ? `Join this ride at ${rideLocation} on ${rideDateLabel}.`
     : `Join this ride on ${rideDateLabel}.`;
+  const ridePath = `/rides/${ride.id}`;
+  const loginHref = `/login?callbackUrl=${encodeURIComponent(ridePath)}`;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
@@ -125,6 +131,14 @@ export default async function RideDetailPage({
               url={shareUrl}
               title={shareTitle}
               description={shareDescription}
+            />
+            <RideAttendanceActions
+              rideId={ride.id}
+              isHost={isHost}
+              initialIsAttending={isAttending}
+              canJoin={Boolean(currentUserId)}
+              loginHref={loginHref}
+              rideName={ride.name}
             />
             <Link
               href="/rides"

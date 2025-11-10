@@ -2,15 +2,31 @@ import { prisma } from "@/lib/prisma";
 import {
   renderDirectMessageEmail,
   renderRideMessageEmail,
+  renderHostJoinEmail,
 } from "@/lib/emailTemplates";
-import { sendMessageNotificationEmail } from "@/lib/mailgun";
+import {
+  sendMessageNotificationEmail,
+  sendHostJoinNotificationEmail,
+} from "@/lib/mailgun";
 import { formatDate, formatTime } from "@/lib/utils";
+import type { Prisma } from "@prisma/client";
 
 const MESSAGE_THROTTLE_HOURS = 24;
 const INBOX_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "https://mtbgroupride.com";
 
+type HostNotificationPayload = {
+  hostId: string;
+  hostEmail: string;
+  hostName: string | null;
+  rideId: string;
+  rideName: string | null;
+  rideDate: Date | null;
+  rideUrl: string;
+  attendeeName: string;
+  attendeeCount: number;
+};
 type RideMessagePayload = {
   rideId: string;
   rideName: string | null;
@@ -21,36 +37,41 @@ type RideMessagePayload = {
   snippet: string;
 };
 
+const messageNotificationDelegate = () =>
+  (prisma as any).messageNotification as {
+    findFirst: (args: any) => Promise<any>;
+    create: (args: any) => Promise<any>;
+  };
+
 export async function notifyRideMessage(payload: RideMessagePayload) {
   const { rideId, rideName, rideDate, rideLocation, senderId, senderName, snippet } =
     payload;
 
-  const recipients = await prisma.rideAttendee.findMany({
-    where: {
-      rideId,
-      userId: { not: senderId },
-      user: {
-        email: { not: undefined },
-        emailNotificationsEnabled: true,
-        notifyRideMessages: true,
-      },
-    },
-    select: {
-      user: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          emailNotificationsEnabled: true,
-          notifyRideMessages: true,
-        },
-      },
-    },
+  const attendeeLinks = await prisma.rideAttendee.findMany({
+    where: { rideId },
+    select: { userId: true },
   });
 
-  if (!recipients.length) {
+  const recipientIds = attendeeLinks
+    .map((entry) => entry.userId)
+    .filter((id) => id && id !== senderId);
+
+  if (!recipientIds.length) {
     return;
   }
+
+  const recipients = await prisma.user.findMany({
+    where: {
+      id: { in: recipientIds },
+      emailNotificationsEnabled: true,
+      notifyRideMessages: true,
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+    },
+  } as Prisma.UserFindManyArgs);
 
   const rideUrl = `${INBOX_URL}/rides/${rideId}`;
   const formattedDate = rideDate
@@ -62,28 +83,25 @@ export async function notifyRideMessage(payload: RideMessagePayload) {
     ? `${rideLocation} • ${formattedDate} @ ${formattedTime}`
     : `${formattedDate} @ ${formattedTime}`;
 
+  const notifications = messageNotificationDelegate();
+
   await Promise.all(
-    recipients.map(async ({ user }) => {
-      if (!user.email) return;
-      if (
-        user.emailNotificationsEnabled === false ||
-        user.notifyRideMessages === false
-      ) {
+    recipients.map(async (user) => {
+      if (!user.email) {
         return;
       }
 
-      const lastNotification =
-        await prisma.messageNotification.findFirst({
-          where: {
-            userId: user.id,
-            rideId,
-            sourceType: "RIDE_MESSAGE",
-            createdAt: {
-              gte: new Date(Date.now() - MESSAGE_THROTTLE_HOURS * 3600 * 1000),
-            },
+      const lastNotification = await notifications.findFirst({
+        where: {
+          userId: user.id,
+          rideId,
+          sourceType: "RIDE_MESSAGE",
+          createdAt: {
+            gte: new Date(Date.now() - MESSAGE_THROTTLE_HOURS * 3600 * 1000),
           },
-          orderBy: { createdAt: "desc" },
-        });
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
       if (lastNotification) {
         return;
@@ -120,7 +138,7 @@ export async function notifyRideMessage(payload: RideMessagePayload) {
       });
 
       if (sent) {
-        await prisma.messageNotification.create({
+        await notifications.create({
           data: {
             userId: user.id,
             rideId,
@@ -155,24 +173,27 @@ export async function notifyDirectMessage(payload: DirectMessagePayload) {
     snippet,
   } = payload;
 
-  const recipient = await prisma.user.findUnique({
-    where: { id: recipientId },
-    select: {
-      email: true,
+  const recipient = await prisma.user.findFirst({
+    where: {
+      id: recipientId,
       emailNotificationsEnabled: true,
       notifyDirectMessages: true,
     },
-  });
+    select: {
+      email: true,
+    },
+  } as Prisma.UserFindFirstArgs);
 
   if (
     !recipient?.email ||
-    recipient.emailNotificationsEnabled === false ||
-    recipient.notifyDirectMessages === false
+    recipient.email === null
   ) {
     return;
   }
 
-  const lastNotification = await prisma.messageNotification.findFirst({
+  const notifications = messageNotificationDelegate();
+
+  const lastNotification = await notifications.findFirst({
     where: {
       userId: recipientId,
       senderId,
@@ -222,7 +243,7 @@ export async function notifyDirectMessage(payload: DirectMessagePayload) {
   });
 
   if (sent) {
-    await prisma.messageNotification.create({
+    await notifications.create({
       data: {
         userId: recipientId,
         senderId,
@@ -234,4 +255,93 @@ export async function notifyDirectMessage(payload: DirectMessagePayload) {
     });
   }
 }
+
+export async function notifyHostOfNewAttendee(
+  payload: HostNotificationPayload,
+) {
+  const {
+    hostId,
+    hostEmail,
+    hostName,
+    rideId,
+    rideName,
+    rideDate,
+    rideUrl,
+    attendeeName,
+    attendeeCount,
+  } = payload;
+
+  const host = await prisma.user.findFirst({
+    where: {
+      id: hostId,
+      emailNotificationsEnabled: true,
+      notifyRideMessages: true,
+    },
+    select: {
+      email: true,
+    },
+  } as Prisma.UserFindFirstArgs);
+
+  if (
+    !host?.email ||
+    host.email === null
+  ) {
+    return;
+  }
+
+  const notifications = messageNotificationDelegate();
+
+  const lastNotification = await notifications.findFirst({
+    where: {
+      userId: hostId,
+      rideId,
+      sourceType: "HOST_JOIN",
+      createdAt: {
+        gte: new Date(Date.now() - MESSAGE_THROTTLE_HOURS * 3600 * 1000),
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (lastNotification) {
+    return;
+  }
+
+  const formattedDate = rideDate
+    ? formatDate(rideDate, { includeWeekday: true })
+    : "Upcoming ride";
+  const formattedTime = rideDate ? formatTime(rideDate) : "TBD";
+
+  const html = renderHostJoinEmail({
+    hostName: hostName || "Ride host",
+    attendeeName,
+    rideName: rideName || "Your ride",
+    rideDate: formattedDate,
+    rideTime: formattedTime,
+    rideUrl,
+    attendeeCount,
+  });
+
+  const subject = `${attendeeName} joined ${rideName || "your ride"}`;
+
+  const sent = await sendHostJoinNotificationEmail({
+    to: hostEmail,
+    subject,
+    html,
+  });
+
+  if (sent) {
+    await notifications.create({
+      data: {
+        userId: hostId,
+        rideId,
+        sourceType: "HOST_JOIN",
+        metadata: {
+          attendeeName,
+        },
+      },
+    });
+  }
+}
+
 

@@ -50,6 +50,8 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
   const [joinLoading, setJoinLoading] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSuccess, setJoinSuccess] = useState<JoinRideSuccess | null>(null);
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
 
   const [localRide, setLocalRide] = useState<Ride>(ride);
   const [shareUrl, setShareUrl] = useState<string>(() => {
@@ -168,6 +170,7 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
 
     setJoinLoading(true);
     setJoinError(null);
+    setLeaveError(null);
 
     try {
       const res = await fetch(`/api/rides/${localRide.id}/join`, {
@@ -196,6 +199,38 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
       setJoinError(message);
     } finally {
       setJoinLoading(false);
+    }
+  };
+
+  const leaveRide = async () => {
+    if (!localRide?.id) {
+      return;
+    }
+
+    setLeaveLoading(true);
+    setLeaveError(null);
+    setJoinError(null);
+
+    try {
+      const res = await fetch(`/api/rides/${localRide.id}/join`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to leave ride");
+      }
+
+      const updatedRide: Ride = data.ride;
+      setLocalRide(updatedRide);
+      onRideUpdate?.(updatedRide);
+      setJoinSuccess(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to leave ride";
+      setLeaveError(message);
+    } finally {
+      setLeaveLoading(false);
     }
   };
 
@@ -285,9 +320,20 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
               </span>
             )}
           </p>
-          {joinError && (
+          {(joinError || leaveError) && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-              {joinError}
+              {joinError || leaveError}
+            </div>
+          )}
+          {hasJoined && !isHost && (
+            <div className="flex gap-2 flex-wrap mb-4">
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:cursor-not-allowed disabled:bg-red-400"
+                onClick={leaveRide}
+                disabled={leaveLoading}
+              >
+                {leaveLoading ? "Leaving..." : "Leave Ride"}
+              </button>
             </div>
           )}
           {showJoinButton && (

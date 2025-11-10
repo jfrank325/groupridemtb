@@ -409,3 +409,92 @@ export function renderDirectMessageEmail({
   `;
 }
 
+interface HostJoinEmailParams {
+  hostName: string;
+  attendeeName: string;
+  rideName: string;
+  rideDate: string;
+  rideTime: string;
+  rideUrl: string;
+  attendeeCount: number;
+}
+
+export function renderHostJoinEmail({
+  hostName,
+  attendeeName,
+  rideName,
+  rideDate,
+  rideTime,
+  rideUrl,
+  attendeeCount,
+}: HostJoinEmailParams) {
+  const safeHost = hostName || "Ride host";
+  const safeRideName = rideName || "Your ride";
+  const attendeeSummary =
+    attendeeCount === 1
+      ? "1 rider is attending"
+      : `${attendeeCount} riders are attending`;
+
+  return `
+    <table cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; background-color: #f9fafb; padding: 24px 0;">
+      <tr>
+        <td>
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; width: 100%; max-width: 520px; background-color: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;">
+            <tr>
+              <td>
+                <p style="margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 600; color: #0f172a;">
+                  New attendee
+                </p>
+                <h1 style="margin: 0 0 12px; font-size: 24px; line-height: 32px; font-weight: 700; color: #111827;">
+                  ${attendeeName} joined ${safeRideName}
+                </h1>
+                <p style="margin: 0 0 16px; font-size: 14px; line-height: 22px; color: #4b5563;">
+                  Great news — your ride has a new attendee. Here&apos;s the latest:
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table cellpadding="0" cellspacing="0" role="presentation" style="width: 100%;">
+                  ${renderInfoRow("Ride", safeRideName)}
+                  ${renderInfoRow("Date", rideDate)}
+                  ${renderInfoRow("Time", rideTime)}
+                  ${renderInfoRow("Attendees", attendeeSummary)}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px 0;">
+                <a
+                  href="${rideUrl}"
+                  style="
+                    display: inline-block;
+                    background: linear-gradient(135deg, #10b981, #34d399);
+                    color: #ffffff;
+                    text-decoration: none;
+                    font-weight: 600;
+                    padding: 12px 24px;
+                    border-radius: 9999px;
+                    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25);
+                    text-align: center;
+                    font-size: 14px;
+                  "
+                >
+                  View ride roster
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                <p style="margin: 0; font-size: 12px; line-height: 18px; color: #9ca3af;">
+                  We&apos;ll only email you about new attendees if it&apos;s been 24 hours since the last update. Manage notifications anytime from your profile.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
