@@ -13,6 +13,8 @@ model User {
   email          String   @unique
   passwordHash   String? 
   zip            Int?
+  lat            Float?
+  lng            Float?
 
   rides       RideAttendee[]
   hostRides   Ride[]   @relation("RideHostRelation")

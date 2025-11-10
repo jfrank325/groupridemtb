@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
+import { fetchLatLngForZip } from "@/lib/utils";
 
 
 export const authOptions: NextAuthOptions = {
@@ -38,8 +39,27 @@ export const authOptions: NextAuthOptions = {
             String(credentials.password),
             user.passwordHash
           );
-          
-          return isValid ? user : null;
+
+          if (!isValid) {
+            return null;
+          }
+
+          if (user.zip && (user.lat === null || user.lat === undefined || user.lng === null || user.lng === undefined)) {
+            try {
+              const coords = await fetchLatLngForZip(String(user.zip).padStart(5, "0"));
+              if (coords) {
+                const updated = await prisma.user.update({
+                  where: { id: user.id },
+                  data: { lat: coords.lat, lng: coords.lng },
+                });
+                return updated;
+              }
+            } catch (error) {
+              console.error("[AUTHORIZE_GEOCODE_ERROR]", error);
+            }
+          }
+
+          return user;
         } catch (error) {
           console.error("[AUTHORIZE_ERROR]", error);
           // Return null on error to prevent leaking information

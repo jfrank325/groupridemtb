@@ -23,6 +23,44 @@ export function getDeterministicCoords(id: string): { lat: number; lng: number }
   };
 }
 
+export async function fetchLatLngForZip(zip: string): Promise<{ lat: number; lng: number } | null> {
+  const trimmed = zip.trim();
+  if (!/^\d{5}$/.test(trimmed)) return null;
+
+  try {
+    const response = await fetch(`https://api.zippopotam.us/us/${trimmed}`, {
+      headers: { "Accept": "application/json" },
+      // Allow caching responses for a day to reduce repeated lookups
+      next: { revalidate: 60 * 60 * 24 },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json() as {
+      places?: Array<{ latitude?: string; longitude?: string }>;
+    };
+
+    const primaryPlace = Array.isArray(data.places) ? data.places[0] : null;
+    if (!primaryPlace?.latitude || !primaryPlace.longitude) {
+      return null;
+    }
+
+    const lat = Number.parseFloat(primaryPlace.latitude);
+    const lng = Number.parseFloat(primaryPlace.longitude);
+
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[fetchLatLngForZip]", error);
+    return null;
+  }
+}
+
 export const EXAMPLE_RIDE_CUTOFF_ISO = "2025-11-07T13:42:09Z";
 export const EXAMPLE_RIDE_CUTOFF = new Date(EXAMPLE_RIDE_CUTOFF_ISO);
 

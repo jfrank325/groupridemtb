@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { userSchema } from "@/lib/validation/userSchema";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
+import { fetchLatLngForZip } from "@/lib/utils";
 
 export async function createUser(formData: FormData) {
   const raw = {
@@ -31,12 +32,25 @@ export async function createUser(formData: FormData) {
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
 
   try {
+    let lat: number | null = null;
+    let lng: number | null = null;
+
+    if (parsed.data.zip) {
+      const coords = await fetchLatLngForZip(parsed.data.zip);
+      if (coords) {
+        lat = coords.lat;
+        lng = coords.lng;
+      }
+    }
+
     const user = await prisma.user.create({
       data: {
         name: parsed.data.name,
         email: parsed.data.email,
         passwordHash,
         zip: parsed.data.zip ? +parsed.data.zip : null,
+        lat,
+        lng,
       },
     });
 
