@@ -133,6 +133,7 @@ async function processRideNotifications(rideId: string) {
 
     const intendedRecipientsRaw = await prisma.user.findMany({
       where: {
+        emailNotificationsEnabled: true,
         notifyLocalRides: true,
         id: { not: ride.userId },
       },
@@ -154,8 +155,9 @@ async function processRideNotifications(rideId: string) {
         name: user.name,
         lat: (user as { lat?: number | null }).lat ?? null,
         lng: (user as { lng?: number | null }).lng ?? null,
-        notificationRadiusMiles: (user as { notificationRadiusMiles?: number | null })
-          .notificationRadiusMiles ?? null,
+        notificationRadiusMiles:
+          (user as { notificationRadiusMiles?: number | null })
+            .notificationRadiusMiles ?? null,
       }),
     );
 

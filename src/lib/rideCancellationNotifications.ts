@@ -9,7 +9,13 @@ type RideWithAttendees = {
   notes: string | null;
   host: { id: string; name: string | null; email: string | null } | null;
   attendees: Array<{
-    user: { id: string; name: string | null; email: string | null };
+    user: {
+      id: string;
+      name: string | null;
+      email: string | null;
+      emailNotificationsEnabled?: boolean | null;
+      notifyRideCancellations?: boolean | null;
+    };
   }>;
 };
 
@@ -35,7 +41,11 @@ async function processRideCancellation(ride: RideWithAttendees) {
 
   await Promise.all(
     ride.attendees.map(async ({ user }) => {
-      if (!user.email || uniqueEmails.has(user.email)) {
+      const canNotify =
+        (user.emailNotificationsEnabled ?? true) &&
+        (user.notifyRideCancellations ?? true);
+
+      if (!canNotify || !user.email || uniqueEmails.has(user.email)) {
         return;
       }
       uniqueEmails.add(user.email);

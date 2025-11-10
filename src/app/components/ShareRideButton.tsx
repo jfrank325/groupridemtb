@@ -33,23 +33,6 @@ const socialPlatforms: SocialPlatform[] = [
     ),
   },
   {
-    name: "X (Twitter)",
-    href: (url, title) =>
-      `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-        url,
-      )}&text=${encodeURIComponent(title)}`,
-    icon: (
-      <svg
-        className="h-4 w-4"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path d="M20.98 3H18.7l-5.06 6.79L8.2 3H3.02l7.32 10.38L3.26 21h2.28l5.48-7.36L16 21h5.2l-7.56-10.73L20.98 3Z" />
-      </svg>
-    ),
-  },
-  {
     name: "LinkedIn",
     href: (url, title) =>
       `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(
@@ -63,6 +46,23 @@ const socialPlatforms: SocialPlatform[] = [
         aria-hidden="true"
       >
         <path d="M4.98 3.5C4.98 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5ZM.24 8.98h4.52V22H.24V8.98ZM8.46 8.98h4.33v1.78h.06c.6-1.13 2.07-2.32 4.27-2.32 4.57 0 5.41 3 5.41 6.9V22h-4.71v-6.44c0-1.54-.03-3.52-2.15-3.52-2.16 0-2.49 1.68-2.49 3.41V22H8.46V8.98Z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Instagram",
+    href: (url, title) =>
+      `https://www.instagram.com/?url=${encodeURIComponent(
+        url,
+      )}&title=${encodeURIComponent(title)}`,
+    icon: (
+      <svg
+        className="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M7 2C4.243 2 2 4.243 2 7v10c0 2.757 2.243 5 5 5h10c2.757 0 5-2.243 5-5V7c0-2.757-2.243-5-5-5H7Zm0 2h10c1.654 0 3 1.346 3 3v10c0 1.654-1.346 3-3 3H7c-1.654 0-3-1.346-3-3V7c0-1.654 1.346-3 3-3Zm11 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2ZM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" />
       </svg>
     ),
   },

@@ -34,7 +34,15 @@ export async function cancelRide(rideId: string) {
       },
       attendees: {
         include: {
-          user: { select: { id: true, name: true, email: true } },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              emailNotificationsEnabled: true,
+              notifyRideCancellations: true,
+            },
+          },
         },
       },
     },

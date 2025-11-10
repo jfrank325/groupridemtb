@@ -10,6 +10,11 @@ async function main() {
       zip: 30301,
       lat: 33.7490,
       lng: -84.3880,
+      emailNotificationsEnabled: true,
+      notifyLocalRides: true,
+      notifyRideCancellations: true,
+      notifyRideMessages: true,
+      notifyDirectMessages: true,
     },
   });
   const bob = await prisma.user.create({
@@ -19,6 +24,11 @@ async function main() {
       zip: 30305,
       lat: 33.8305,
       lng: -84.3799,
+      emailNotificationsEnabled: true,
+      notifyLocalRides: true,
+      notifyRideCancellations: true,
+      notifyRideMessages: true,
+      notifyDirectMessages: true,
     },
   });
   const charlie = await prisma.user.create({
@@ -28,6 +38,11 @@ async function main() {
       zip: 30030,
       lat: 33.7711,
       lng: -84.2963,
+      emailNotificationsEnabled: true,
+      notifyLocalRides: true,
+      notifyRideCancellations: true,
+      notifyRideMessages: true,
+      notifyDirectMessages: true,
     },
   });
 

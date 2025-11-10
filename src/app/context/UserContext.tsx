@@ -12,6 +12,10 @@ interface User {
   lng?: number | null;
   notifyLocalRides?: boolean | null;
   notificationRadiusMiles?: number | null;
+  emailNotificationsEnabled?: boolean | null;
+  notifyRideCancellations?: boolean | null;
+  notifyRideMessages?: boolean | null;
+  notifyDirectMessages?: boolean | null;
 }
 
 interface UserContextType {

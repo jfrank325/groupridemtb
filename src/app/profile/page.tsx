@@ -154,7 +154,11 @@ export default async function ProfilePage() {
                                         Email Notifications
                                     </h3>
                                     <UserNotificationPreferences
-                                        initialNotify={fullUser?.notifyLocalRides ?? true}
+                                        initialEmailEnabled={fullUser?.emailNotificationsEnabled ?? true}
+                                        initialNotifyLocalRides={fullUser?.notifyLocalRides ?? true}
+                                        initialNotifyRideCancellations={fullUser?.notifyRideCancellations ?? true}
+                                        initialNotifyRideMessages={fullUser?.notifyRideMessages ?? true}
+                                        initialNotifyDirectMessages={fullUser?.notifyDirectMessages ?? true}
                                         initialRadius={fullUser?.notificationRadiusMiles ?? null}
                                     />
                                 </div>

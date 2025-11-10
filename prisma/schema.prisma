@@ -17,6 +17,10 @@ model User {
   lng            Float?
   notifyLocalRides       Boolean @default(true)
   notificationRadiusMiles Int? @default(25)
+  emailNotificationsEnabled Boolean @default(true)
+  notifyRideCancellations Boolean @default(true)
+  notifyRideMessages Boolean @default(true)
+  notifyDirectMessages Boolean @default(true)
 
   rides       RideAttendee[]
   hostRides   Ride[]   @relation("RideHostRelation")

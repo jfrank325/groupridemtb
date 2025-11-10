@@ -17,7 +17,14 @@ export default function PrivacyPage() {
         <p>
           MTB Group Ride collects only the information required to manage your account and deliver core
           product features. This includes your name, email address, password (stored securely using
-          industry-standard hashing), and optional ZIP code to surface relevant rides and trails.
+          industry-standard hashing), and required ZIP code so we can surface nearby rides, trails, and
+          notifications relevant to your location.
+        </p>
+        <p>
+          We use your email address to send transactional updates about the service. Examples include ride
+          reminders, cancellation alerts, invitations, and new message notifications. Emails are delivered
+          through Mailgun, our trusted email provider, solely for MTB Group Ride communications. You can
+          control optional notification preferences in your profile at any time.
         </p>
         <p>
           We never sell or share your personal information. Access to user data is limited to authorized

@@ -25,6 +25,13 @@ export default function TermsPage() {
           or interacting with other members.
         </p>
         <p>
+          You authorize us to send service-related communications, including ride announcements,
+          cancellation notices, and new message alerts. These emails are sent through our provider
+          Mailgun solely for MTB Group Ride functionality. You may manage certain notification preferences
+          from your profile; however, transactional updates (for example, critical account notices) will
+          continue while your account remains active.
+        </p>
+        <p>
           You may not use the platform to distribute spam, infringe on intellectual property rights, or
           engage in abusive, harassing, or illegal activity. Violations may result in account suspension or
           termination at our discretion.

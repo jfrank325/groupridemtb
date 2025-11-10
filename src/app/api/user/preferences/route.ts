@@ -6,9 +6,15 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+const DEFAULT_NOTIFICATION_RADIUS = 25;
+
 const preferencesSchema = z
   .object({
-    notifyLocalRides: z.boolean(),
+    emailNotificationsEnabled: z.boolean().optional(),
+    notifyLocalRides: z.boolean().optional(),
+    notifyRideCancellations: z.boolean().optional(),
+    notifyRideMessages: z.boolean().optional(),
+    notifyDirectMessages: z.boolean().optional(),
     notificationRadiusMiles: z
       .number()
       .int("Radius must be a whole number")
@@ -18,7 +24,13 @@ const preferencesSchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.notifyLocalRides) {
+    const emailEnabled = data.emailNotificationsEnabled ?? true;
+
+    if (!emailEnabled) {
+      return;
+    }
+
+    if (data.notifyLocalRides ?? true) {
       const radius =
         data.notificationRadiusMiles === null || data.notificationRadiusMiles === undefined
           ? null
@@ -60,19 +72,52 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { notifyLocalRides, notificationRadiusMiles } = parsed.data;
+  const {
+    emailNotificationsEnabled,
+    notifyLocalRides,
+    notifyRideCancellations,
+    notifyRideMessages,
+    notifyDirectMessages,
+    notificationRadiusMiles,
+  } = parsed.data;
+
+  const currentUser = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { notificationRadiusMiles: true },
+  });
+
+  const effectiveEmailEnabled = emailNotificationsEnabled ?? true;
+  const effectiveNotifyLocalRides =
+    effectiveEmailEnabled && (notifyLocalRides ?? true);
+  const effectiveNotifyRideCancellations =
+    effectiveEmailEnabled && (notifyRideCancellations ?? true);
+  const effectiveNotifyRideMessages =
+    effectiveEmailEnabled && (notifyRideMessages ?? true);
+  const effectiveNotifyDirectMessages =
+    effectiveEmailEnabled && (notifyDirectMessages ?? true);
 
   try {
     const user = await prisma.user.update({
       where: { email: session.user.email },
       data: {
-        notifyLocalRides,
-        notificationRadiusMiles: notifyLocalRides
-          ? notificationRadiusMiles
-          : null,
+        emailNotificationsEnabled: effectiveEmailEnabled,
+        notifyLocalRides: effectiveNotifyLocalRides,
+        notifyRideCancellations: effectiveNotifyRideCancellations,
+        notifyRideMessages: effectiveNotifyRideMessages,
+        notifyDirectMessages: effectiveNotifyDirectMessages,
+        notificationRadiusMiles:
+          effectiveEmailEnabled && effectiveNotifyLocalRides
+            ? notificationRadiusMiles ??
+              currentUser?.notificationRadiusMiles ??
+              DEFAULT_NOTIFICATION_RADIUS
+            : null,
       },
       select: {
+        emailNotificationsEnabled: true,
         notifyLocalRides: true,
+        notifyRideCancellations: true,
+        notifyRideMessages: true,
+        notifyDirectMessages: true,
         notificationRadiusMiles: true,
       },
     });

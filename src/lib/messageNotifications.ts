@@ -31,6 +31,8 @@ export async function notifyRideMessage(payload: RideMessagePayload) {
       userId: { not: senderId },
       user: {
         email: { not: null },
+        emailNotificationsEnabled: true,
+        notifyRideMessages: true,
       },
     },
     select: {
@@ -39,6 +41,8 @@ export async function notifyRideMessage(payload: RideMessagePayload) {
           id: true,
           email: true,
           name: true,
+          emailNotificationsEnabled: true,
+          notifyRideMessages: true,
         },
       },
     },
@@ -61,6 +65,12 @@ export async function notifyRideMessage(payload: RideMessagePayload) {
   await Promise.all(
     recipients.map(async ({ user }) => {
       if (!user.email) return;
+      if (
+        user.emailNotificationsEnabled === false ||
+        user.notifyRideMessages === false
+      ) {
+        return;
+      }
 
       const lastNotification =
         await prisma.messageNotification.findFirst({
@@ -130,7 +140,6 @@ export async function notifyRideMessage(payload: RideMessagePayload) {
 
 type DirectMessagePayload = {
   recipientId: string;
-  recipientEmail: string;
   senderId: string;
   senderName: string | null;
   senderProfileUrl: string;
@@ -140,12 +149,28 @@ type DirectMessagePayload = {
 export async function notifyDirectMessage(payload: DirectMessagePayload) {
   const {
     recipientId,
-    recipientEmail,
     senderId,
     senderName,
     senderProfileUrl,
     snippet,
   } = payload;
+
+  const recipient = await prisma.user.findUnique({
+    where: { id: recipientId },
+    select: {
+      email: true,
+      emailNotificationsEnabled: true,
+      notifyDirectMessages: true,
+    },
+  });
+
+  if (
+    !recipient?.email ||
+    recipient.emailNotificationsEnabled === false ||
+    recipient.notifyDirectMessages === false
+  ) {
+    return;
+  }
 
   const lastNotification = await prisma.messageNotification.findFirst({
     where: {
@@ -191,7 +216,7 @@ export async function notifyDirectMessage(payload: DirectMessagePayload) {
     : `${senderName || "A rider"} sent you a message`;
 
   const sent = await sendMessageNotificationEmail({
-    to: recipientEmail,
+    to: recipient.email,
     subject,
     html,
   });

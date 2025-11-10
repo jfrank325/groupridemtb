@@ -3,23 +3,79 @@
 import { useState, useTransition } from "react";
 
 interface UserNotificationPreferencesProps {
-  initialNotify: boolean;
+  initialEmailEnabled: boolean;
+  initialNotifyLocalRides: boolean;
+  initialNotifyRideCancellations: boolean;
+  initialNotifyRideMessages: boolean;
+  initialNotifyDirectMessages: boolean;
   initialRadius: number | null;
 }
 
 const DEFAULT_RADIUS = 25;
 
 export function UserNotificationPreferences({
-  initialNotify,
+  initialEmailEnabled,
+  initialNotifyLocalRides,
+  initialNotifyRideCancellations,
+  initialNotifyRideMessages,
+  initialNotifyDirectMessages,
   initialRadius,
 }: UserNotificationPreferencesProps) {
-  const [notifyLocalRides, setNotifyLocalRides] = useState<boolean>(initialNotify);
+  const [emailEnabled, setEmailEnabled] = useState<boolean>(initialEmailEnabled);
+  const [notifyLocalRides, setNotifyLocalRides] = useState<boolean>(
+    initialEmailEnabled ? initialNotifyLocalRides : false,
+  );
+  const [notifyRideCancellations, setNotifyRideCancellations] =
+    useState<boolean>(initialEmailEnabled ? initialNotifyRideCancellations : false);
+  const [notifyRideMessages, setNotifyRideMessages] = useState<boolean>(
+    initialEmailEnabled ? initialNotifyRideMessages : false,
+  );
+  const [notifyDirectMessages, setNotifyDirectMessages] = useState<boolean>(
+    initialEmailEnabled ? initialNotifyDirectMessages : false,
+  );
   const [radiusInput, setRadiusInput] = useState<string>(
     initialRadius ? String(initialRadius) : "",
   );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const trackClasses = (isOn: boolean, disabled?: boolean) =>
+    [
+      "inline-block h-6 w-11 rounded-full transition-colors",
+      disabled ? "bg-gray-200" : isOn ? "bg-emerald-500" : "bg-gray-300",
+    ].join(" ");
+
+  const knobClasses = (isOn: boolean) =>
+    [
+      "pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
+      isOn ? "translate-x-5" : "",
+    ].join(" ");
+
+  const renderToggle = ({
+    checked,
+    disabled,
+    onChange,
+    name,
+  }: {
+    checked: boolean;
+    disabled?: boolean;
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    name: string;
+  }) => (
+    <label className="relative inline-flex h-6 w-11 items-center">
+      <input
+        type="checkbox"
+        className="sr-only"
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        name={name}
+      />
+      <span className={trackClasses(checked, disabled)} aria-hidden="true" />
+      <span className={knobClasses(checked)} aria-hidden="true" />
+    </label>
+  );
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,9 +85,11 @@ export function UserNotificationPreferences({
     const trimmedRadius = radiusInput.trim();
     const parsedRadius = trimmedRadius ? Number.parseInt(trimmedRadius, 10) : null;
     const resolvedRadius =
-      notifyLocalRides && !trimmedRadius ? DEFAULT_RADIUS : parsedRadius;
+      emailEnabled && notifyLocalRides && !trimmedRadius
+        ? DEFAULT_RADIUS
+        : parsedRadius;
 
-    if (notifyLocalRides) {
+    if (emailEnabled && notifyLocalRides) {
       if (
         resolvedRadius === null ||
         !Number.isFinite(resolvedRadius) ||
@@ -48,8 +106,13 @@ export function UserNotificationPreferences({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            emailNotificationsEnabled: emailEnabled,
             notifyLocalRides,
-            notificationRadiusMiles: notifyLocalRides ? resolvedRadius : null,
+            notifyRideCancellations,
+            notifyRideMessages,
+            notifyDirectMessages,
+            notificationRadiusMiles:
+              emailEnabled && notifyLocalRides ? resolvedRadius : null,
           }),
         });
 
@@ -81,6 +144,39 @@ export function UserNotificationPreferences({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
+        <div>
+          <p className="text-sm font-medium text-gray-900">
+            Email notifications
+          </p>
+          <p className="text-xs text-gray-500">
+            Toggle all emails on or off. You can manage individual categories when enabled.
+          </p>
+        </div>
+        {renderToggle({
+          checked: emailEnabled,
+          onChange: (event) => {
+            const checked = event.target.checked;
+            setEmailEnabled(checked);
+            if (!checked) {
+              setNotifyLocalRides(false);
+              setNotifyRideCancellations(false);
+              setNotifyRideMessages(false);
+              setNotifyDirectMessages(false);
+            } else {
+              setNotifyLocalRides(true);
+              setNotifyRideCancellations(true);
+              setNotifyRideMessages(true);
+              setNotifyDirectMessages(true);
+              if (!radiusInput.trim()) {
+                setRadiusInput(String(DEFAULT_RADIUS));
+              }
+            }
+          },
+          name: "emailNotificationsEnabled",
+        })}
+      </div>
+
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-gray-900">
@@ -90,25 +186,22 @@ export function UserNotificationPreferences({
             Receive an email when a new ride is created near your saved location.
           </p>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={notifyLocalRides}
-            onChange={(event) => {
-              const checked = event.target.checked;
-              setNotifyLocalRides(checked);
-              if (checked && !radiusInput.trim()) {
-                setRadiusInput(String(DEFAULT_RADIUS));
-              }
-            }}
-          />
-          <div className="w-11 h-6 bg-gray-200 rounded-full transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:bg-emerald-600" />
-          <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
-        </label>
+        {renderToggle({
+          checked: emailEnabled && notifyLocalRides,
+          disabled: !emailEnabled,
+          onChange: (event) => {
+            if (!emailEnabled) return;
+            const checked = event.target.checked;
+            setNotifyLocalRides(checked);
+            if (checked && !radiusInput.trim()) {
+              setRadiusInput(String(DEFAULT_RADIUS));
+            }
+          },
+          name: "notifyLocalRides",
+        })}
       </div>
 
-      {notifyLocalRides && (
+      {emailEnabled && notifyLocalRides && (
         <div>
           <label
             htmlFor="notificationRadiusMiles"
@@ -131,6 +224,66 @@ export function UserNotificationPreferences({
           </p>
         </div>
       )}
+
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">
+            Ride cancellations
+          </p>
+          <p className="text-xs text-gray-500">
+            Get notified when a ride you&apos;re attending is cancelled.
+          </p>
+        </div>
+        {renderToggle({
+          checked: emailEnabled && notifyRideCancellations,
+          disabled: !emailEnabled,
+          onChange: (event) => {
+            if (!emailEnabled) return;
+            setNotifyRideCancellations(event.target.checked);
+          },
+          name: "notifyRideCancellations",
+        })}
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">
+            Ride conversations
+          </p>
+          <p className="text-xs text-gray-500">
+            Email me if there are new messages on rides I&apos;m hosting or attending (at most once every 24 hours).
+          </p>
+        </div>
+        {renderToggle({
+          checked: emailEnabled && notifyRideMessages,
+          disabled: !emailEnabled,
+          onChange: (event) => {
+            if (!emailEnabled) return;
+            setNotifyRideMessages(event.target.checked);
+          },
+          name: "notifyRideMessages",
+        })}
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">
+            Direct messages
+          </p>
+          <p className="text-xs text-gray-500">
+            Receive direct message alerts from other riders (no more than once every 24 hours per rider).
+          </p>
+        </div>
+        {renderToggle({
+          checked: emailEnabled && notifyDirectMessages,
+          disabled: !emailEnabled,
+          onChange: (event) => {
+            if (!emailEnabled) return;
+            setNotifyDirectMessages(event.target.checked);
+          },
+          name: "notifyDirectMessages",
+        })}
+      </div>
 
       {error && (
         <p className="text-sm text-red-600" role="alert">
