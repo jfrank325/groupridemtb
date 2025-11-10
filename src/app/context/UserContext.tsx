@@ -8,6 +8,8 @@ interface User {
   name: string | null;
   email: string;
   favoriteTrails?: Array<{ id: string }>;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 interface UserContextType {

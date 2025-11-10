@@ -10,9 +10,10 @@ interface TrailMapProps {
   trails: Trail[];
   highlightedTrailId?: string | null;
   onTrailHover?: (trailId: string | null) => void;
+  center?: [number, number];
 }
 
-export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: TrailMapProps) {
+export default function TrailMap({ trails, highlightedTrailId, onTrailHover, center }: TrailMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onTrailHoverRef = useRef(onTrailHover);
@@ -113,10 +114,12 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
   useEffect(() => {
     if (!mapContainer.current || mapRef.current || !maptilerKey) return;
 
+    const initialCenter = center ?? [-84.389, 33.75];
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: `https://api.maptiler.com/maps/outdoor/style.json?key=${maptilerKey}`,
-      center: [-84.389, 33.75],
+      center: initialCenter,
       zoom: 9,
     });
 
@@ -311,7 +314,7 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
         hideTimeoutRef.current = null;
       }
     };
-  }, [trails, maptilerKey]);
+  }, [trails, maptilerKey, center]);
 
   // Update map source when coordinates are fetched
   useEffect(() => {
@@ -363,6 +366,17 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover }: T
       console.error("Error updating map source:", error);
     }
   }, [trailCoordinates, trails, isMapLoaded]);
+
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded || !center) return;
+    const map = mapRef.current;
+    if (!map.loaded()) return;
+
+    map.easeTo({
+      center,
+      duration: 800,
+    });
+  }, [center, isMapLoaded]);
 
   // Update map styling when highlightedTrailId changes
   useEffect(() => {

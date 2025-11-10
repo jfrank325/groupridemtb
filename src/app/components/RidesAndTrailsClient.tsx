@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, Suspense } from "react";
+import { useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { RidesList } from "./RidesList";
 import { type Ride } from "../hooks/useRides";
 import { type Trail } from "../hooks/useTrails";
+import { useUser } from "../context/UserContext";
 
 // Dynamically import TrailMap to reduce initial bundle size
 const TrailMap = dynamic(() => import("./TrailMap"), {
@@ -27,6 +28,14 @@ interface RidesAndTrailsClientProps {
 export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProps) => {
   const [highlightedTrailId, setHighlightedTrailId] = useState<string | null>(null);
   const [highlightedRideIds, setHighlightedRideIds] = useState<string[]>([]);
+  const { user } = useUser();
+
+  const userCenter = useMemo<[number, number] | null>(() => {
+    if (typeof user?.lat === "number" && typeof user?.lng === "number") {
+      return [user.lng, user.lat];
+    }
+    return null;
+  }, [user?.lat, user?.lng]);
 
   // When a trail is hovered on the map, highlight the trail and find all rides that include that trail
   const handleTrailHover = useCallback((trailId: string | null) => {
@@ -64,6 +73,7 @@ export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProp
             trails={trails} 
             highlightedTrailId={highlightedTrailId}
             onTrailHover={handleTrailHover}
+            center={userCenter ?? undefined}
           />
         </div>
       </div>
