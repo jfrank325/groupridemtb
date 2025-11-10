@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { queueRideCancellationNotifications } from "@/lib/rideCancellationNotifications";
 
 export async function cancelRide(rideId: string) {
   if (!rideId) {
@@ -27,7 +28,16 @@ export async function cancelRide(rideId: string) {
 
   const ride = await prisma.ride.findUnique({
     where: { id: rideId },
-    select: { userId: true },
+    include: {
+      host: {
+        select: { id: true, name: true, email: true },
+      },
+      attendees: {
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
+    },
   });
 
   if (!ride) {
@@ -37,6 +47,15 @@ export async function cancelRide(rideId: string) {
   if (ride.userId !== currentUser.id) {
     return { error: "Only the host can cancel this ride." };
   }
+
+  queueRideCancellationNotifications({
+    id: ride.id,
+    name: ride.name,
+    date: ride.date,
+    notes: ride.notes,
+    host: ride.host,
+    attendees: ride.attendees,
+  });
 
   await prisma.ride.delete({ where: { id: rideId } });
 

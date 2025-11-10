@@ -44,4 +44,11 @@ instructions.md
 nextjs.mdc
 SECURITY_IMPLEMENTATION.md
 SECURITY_FIXES.md
+MailImplementation.md
 lighthousereport.json
+
+prisma/migrations/*
+add_user_notification_prefs.sql
+make_user_notifications_work.md
+set_notification_radius_default.sql
+make_user_zip_required.sql

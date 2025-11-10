@@ -7,11 +7,11 @@ import { prisma } from "@/lib/prisma";
 import { EditRideForm } from "@/app/components/EditRideForm";
 
 interface EditRidePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function EditRidePage({ params }: EditRidePageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   const session = await getServerSession(authOptions);
 

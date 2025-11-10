@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { MessagesLink } from "../components/MessagesLink";
 import { Prisma } from "@prisma/client";
+import { UserNotificationPreferences } from "../components/UserNotificationPreferences";
 
 export default async function ProfilePage() {
     const session = await getServerSession(authOptions);
@@ -148,6 +149,15 @@ export default async function ProfilePage() {
                                         <p className="text-gray-900 font-medium">{fullUser.favoriteTrails.length}</p>
                                     </div>
                                 )}
+                                <div className="pt-4 border-t border-gray-200">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                                        Email Notifications
+                                    </h3>
+                                    <UserNotificationPreferences
+                                        initialNotify={fullUser?.notifyLocalRides ?? true}
+                                        initialRadius={fullUser?.notificationRadiusMiles ?? null}
+                                    />
+                                </div>
                             </div>
                             <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
                                 <MessagesLink />

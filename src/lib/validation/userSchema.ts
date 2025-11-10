@@ -14,7 +14,7 @@ export const userSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters").trim(),
   email: z.string().email("Please enter a valid email address").toLowerCase().trim(),
   password: passwordSchema,
-  zip: z.string().regex(/^\d{5}$/, "Zip code must be 5 digits").optional().or(z.literal("")),
+  zip: z.string().regex(/^\d{5}$/, "Zip code must be 5 digits").trim(),
 });
 
 export type UserFormData = z.infer<typeof userSchema>;

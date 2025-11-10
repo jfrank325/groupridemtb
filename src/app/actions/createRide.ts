@@ -9,6 +9,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { rideLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
 import { headers } from "next/headers";
+import { queueLocalRideNotifications } from "@/lib/localRideNotifications";
 
 export async function createRide(formData: FormData) {
   // Check authentication
@@ -114,6 +115,8 @@ export async function createRide(formData: FormData) {
         : undefined,
     },
   });
+
+  queueLocalRideNotifications(ride.id);
 
   revalidatePath("/rides");
   revalidatePath(`/rides/${ride.id}`);

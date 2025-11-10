@@ -11,7 +11,7 @@ export async function createUser(formData: FormData) {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
     password: formData.get("password") as string,
-    zip: formData.get("zip") as string | null,
+    zip: (formData.get("zip") ?? "") as string,
   };
 
   const parsed = userSchema.safeParse(raw);
@@ -35,8 +35,10 @@ export async function createUser(formData: FormData) {
     let lat: number | null = null;
     let lng: number | null = null;
 
-    if (parsed.data.zip) {
-      const coords = await fetchLatLngForZip(parsed.data.zip);
+    const zip = parsed.data.zip;
+
+    if (zip) {
+      const coords = await fetchLatLngForZip(zip);
       if (coords) {
         lat = coords.lat;
         lng = coords.lng;
@@ -48,7 +50,7 @@ export async function createUser(formData: FormData) {
         name: parsed.data.name,
         email: parsed.data.email,
         passwordHash,
-        zip: parsed.data.zip ? +parsed.data.zip : null,
+        zip: Number.parseInt(zip, 10),
         lat,
         lng,
       },

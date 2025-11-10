@@ -6,8 +6,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime, getNextRecurringDate, Recurrence } from "@/lib/utils";
 
-export default async function RideDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function RideDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
   let ride = await prisma.ride.findUnique({
     where: { id },

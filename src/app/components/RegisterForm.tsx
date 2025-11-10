@@ -62,9 +62,7 @@ export default function RegisterForm() {
       formData.append('name', data.name.trim());
       formData.append('password', data.password);
       formData.append('email', data.email.toLowerCase().trim());
-      if (data.zip && data.zip.length === 5) {
-        formData.append('zip', data.zip.trim());
-      }
+      formData.append('zip', data.zip.trim());
       
       const result = await createUser(formData);
       
@@ -173,7 +171,7 @@ export default function RegisterForm() {
       {/* Zip Code */}
       <div>
         <label htmlFor="zip" className="block text-sm font-semibold text-gray-900 mb-2">
-          Zip Code <span className="text-gray-600 font-normal">(optional)</span>
+          Zip Code <span className="text-red-500">*</span>
         </label>
         <input
           type="text"

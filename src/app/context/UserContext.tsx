@@ -10,6 +10,8 @@ interface User {
   favoriteTrails?: Array<{ id: string }>;
   lat?: number | null;
   lng?: number | null;
+  notifyLocalRides?: boolean | null;
+  notificationRadiusMiles?: number | null;
 }
 
 interface UserContextType {

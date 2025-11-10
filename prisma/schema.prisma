@@ -12,9 +12,11 @@ model User {
   name           String
   email          String   @unique
   passwordHash   String? 
-  zip            Int?
+  zip            Int
   lat            Float?
   lng            Float?
+  notifyLocalRides       Boolean @default(true)
+  notificationRadiusMiles Int? @default(25)
 
   rides       RideAttendee[]
   hostRides   Ride[]   @relation("RideHostRelation")
