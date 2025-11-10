@@ -26,15 +26,7 @@ async function processRideNotifications(rideId: string) {
         host: { select: { id: true, name: true, email: true } },
         trails: {
           include: {
-            trail: {
-              select: {
-                id: true,
-                name: true,
-                difficulty: true,
-                lat: true,
-                lng: true,
-              },
-            },
+            trail: true,
           },
         },
       },
@@ -124,7 +116,6 @@ async function processRideNotifications(rideId: string) {
                 },
               },
             ],
-            coordinates: { not: null },
           },
         });
 

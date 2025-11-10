@@ -3,9 +3,33 @@ const prisma = new PrismaClient()
 
 async function main() {
   // --- USERS ---
-  const alice = await prisma.user.create({ data: { name: 'Alice Johnson', email: 'alice@example.com' } })
-  const bob = await prisma.user.create({ data: { name: 'Bob Miller', email: 'bob@example.com' } })
-  const charlie = await prisma.user.create({ data: { name: 'Charlie Davis', email: 'charlie@example.com' } })
+  const alice = await prisma.user.create({
+    data: {
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      zip: 30301,
+      lat: 33.7490,
+      lng: -84.3880,
+    },
+  });
+  const bob = await prisma.user.create({
+    data: {
+      name: 'Bob Miller',
+      email: 'bob@example.com',
+      zip: 30305,
+      lat: 33.8305,
+      lng: -84.3799,
+    },
+  });
+  const charlie = await prisma.user.create({
+    data: {
+      name: 'Charlie Davis',
+      email: 'charlie@example.com',
+      zip: 30030,
+      lat: 33.7711,
+      lng: -84.2963,
+    },
+  });
 
   // --- FRIENDS (mutual) ---
   await prisma.user.update({ where: { id: alice.id }, data: { friends: { connect: [{ id: bob.id }, { id: charlie.id }] } } })

@@ -10,7 +10,7 @@ const preferencesSchema = z
   .object({
     notifyLocalRides: z.boolean(),
     notificationRadiusMiles: z
-      .number({ invalid_type_error: "Radius must be a number" })
+      .number()
       .int("Radius must be a whole number")
       .min(1, "Radius must be at least 1 mile")
       .max(500, "Radius must be 500 miles or less")
@@ -18,12 +18,19 @@ const preferencesSchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.notifyLocalRides && (data.notificationRadiusMiles ?? null) === null) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["notificationRadiusMiles"],
-        message: "Please provide a radius when notifications are enabled.",
-      });
+    if (data.notifyLocalRides) {
+      const radius =
+        data.notificationRadiusMiles === null || data.notificationRadiusMiles === undefined
+          ? null
+          : data.notificationRadiusMiles;
+
+      if (radius === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["notificationRadiusMiles"],
+          message: "Please provide a radius when notifications are enabled.",
+        });
+      }
     }
   });
 
