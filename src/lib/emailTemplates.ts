@@ -226,3 +226,186 @@ export function renderRideCancelledEmail({
   `;
 }
 
+interface RideMessageEmailParams {
+  rideName: string;
+  rideUrl: string;
+  senderName: string;
+  snippet: string;
+  totalUnread: number;
+}
+
+export function renderRideMessageEmail({
+  rideName,
+  rideUrl,
+  senderName,
+  snippet,
+  totalUnread,
+}: RideMessageEmailParams) {
+  const safeSnippet = snippet.trim();
+  const unreadLabel =
+    totalUnread > 1
+      ? `${totalUnread} new messages`
+      : "1 new message";
+
+  return `
+    <table cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; background-color: #f9fafb; padding: 24px 0;">
+      <tr>
+        <td>
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; width: 100%; max-width: 520px; background-color: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;">
+            <tr>
+              <td>
+                <p style="margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 600; color: #0f172a;">
+                  ${unreadLabel}
+                </p>
+                <h1 style="margin: 0 0 12px; font-size: 24px; line-height: 32px; font-weight: 700; color: #111827;">
+                  New activity in ${rideName}
+                </h1>
+                <p style="margin: 0 0 16px; font-size: 14px; line-height: 22px; color: #4b5563;">
+                  ${senderName} just posted a message about this ride. Tap below to read it and keep the conversation going.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div style="border-left: 4px solid #10b981; padding-left: 16px; margin-bottom: 24px;">
+                  <p style="margin: 0; font-size: 13px; line-height: 20px; color: #1f2937;">
+                    ${safeSnippet}
+                  </p>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <a
+                  href="${rideUrl}"
+                  style="
+                    display: inline-block;
+                    background: linear-gradient(135deg, #10b981, #34d399);
+                    color: #ffffff;
+                    text-decoration: none;
+                    font-weight: 600;
+                    padding: 12px 24px;
+                    border-radius: 9999px;
+                    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25);
+                    text-align: center;
+                    font-size: 14px;
+                  "
+                >
+                  View ride conversation
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px;">
+                <p style="margin: 0; font-size: 12px; line-height: 18px; color: #9ca3af;">
+                  You’re receiving this email because you’re part of this ride. We’ll only nudge you if there’s been no new activity for 24 hours.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+interface DirectMessageEmailParams {
+  senderName: string;
+  senderProfileUrl: string;
+  snippet: string;
+  inboxUrl: string;
+  totalUnreadFromSender: number;
+}
+
+export function renderDirectMessageEmail({
+  senderName,
+  senderProfileUrl,
+  snippet,
+  inboxUrl,
+  totalUnreadFromSender,
+}: DirectMessageEmailParams) {
+  const safeSnippet = snippet.trim();
+  const unreadLabel =
+    totalUnreadFromSender > 1
+      ? `${totalUnreadFromSender} new messages`
+      : "1 new message";
+
+  return `
+    <table cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; background-color: #f9fafb; padding: 24px 0;">
+      <tr>
+        <td>
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; width: 100%; max-width: 520px; background-color: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;">
+            <tr>
+              <td>
+                <p style="margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 600; color: #0f172a;">
+                  ${unreadLabel}
+                </p>
+                <h1 style="margin: 0 0 12px; font-size: 24px; line-height: 32px; font-weight: 700; color: #111827;">
+                  ${senderName} sent you a message
+                </h1>
+                <p style="margin: 0 0 16px; font-size: 14px; line-height: 22px; color: #4b5563;">
+                  Connect directly with fellow riders. Reply now to keep the conversation moving.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div style="border-left: 4px solid #6366f1; padding-left: 16px; margin-bottom: 24px;">
+                  <p style="margin: 0; font-size: 13px; line-height: 20px; color: #1f2937;">
+                    ${safeSnippet}
+                  </p>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <a
+                    href="${inboxUrl}"
+                    style="
+                      display: inline-block;
+                      background: linear-gradient(135deg, #4f46e5, #6366f1);
+                      color: #ffffff;
+                      text-decoration: none;
+                      font-weight: 600;
+                      padding: 12px 24px;
+                      border-radius: 9999px;
+                      box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25);
+                      text-align: center;
+                      font-size: 14px;
+                    "
+                  >
+                    Open your inbox
+                  </a>
+                  <a
+                    href="${senderProfileUrl}"
+                    style="
+                      display: inline-block;
+                      border: 1px solid #d1d5db;
+                      color: #111827;
+                      text-decoration: none;
+                      font-weight: 600;
+                      padding: 12px 24px;
+                      border-radius: 9999px;
+                      font-size: 14px;
+                    "
+                  >
+                    View ${senderName}'s profile
+                  </a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px;">
+                <p style="margin: 0; font-size: 12px; line-height: 18px; color: #9ca3af;">
+                  We’ll only email you if you haven’t heard from this rider in the last 24 hours. Reply to stop these reminders automatically.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+

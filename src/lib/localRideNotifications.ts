@@ -6,9 +6,55 @@ import {
 } from "@/lib/utils";
 import { sendLocalRideAlert } from "@/lib/mailgun";
 import { renderLocalRideEmail } from "@/lib/emailTemplates";
+import type { Prisma } from "@prisma/client";
 
 const DEFAULT_NOTIFICATION_RADIUS_MILES = 25;
 const MAX_NOTIFICATION_RADIUS_MILES = 500;
+
+type LatLng = { lat: number; lng: number };
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const extractLatLng = (
+  value: Prisma.JsonValue | null | undefined,
+): LatLng | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    const first = value[0];
+    if (
+      Array.isArray(first) &&
+      first.length >= 2 &&
+      isFiniteNumber(first[1]) &&
+      isFiniteNumber(first[0])
+    ) {
+      return { lat: first[1], lng: first[0] };
+    }
+  }
+
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "coordinates" in value &&
+    Array.isArray((value as { coordinates: unknown }).coordinates)
+  ) {
+    const coordsArray = (value as { coordinates: unknown[] }).coordinates;
+    const first = coordsArray[0];
+    if (
+      Array.isArray(first) &&
+      first.length >= 2 &&
+      isFiniteNumber(first[1]) &&
+      isFiniteNumber(first[0])
+    ) {
+      return { lat: first[1], lng: first[0] };
+    }
+  }
+
+  return null;
+};
 
 function sanitizeRadius(value: number | null | undefined): number {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -37,72 +83,17 @@ async function processRideNotifications(rideId: string) {
       return;
     }
 
-    const firstTrailWithCoords = ride.trails.find((entry) => {
-      const rawCoords = entry.trail?.coordinates;
-      if (!rawCoords) return false;
+    const firstTrailWithCoords = ride.trails.find((entry) =>
+      Boolean(extractLatLng(entry.trail?.coordinates)),
+    );
 
-      if (
-        Array.isArray(rawCoords) &&
-        rawCoords.length > 0 &&
-        Array.isArray(rawCoords[0]) &&
-        rawCoords[0].length >= 2
-      ) {
-        return true;
-      }
-
-      if (
-        typeof rawCoords === "object" &&
-        rawCoords !== null &&
-        "coordinates" in rawCoords &&
-        Array.isArray((rawCoords as any).coordinates)
-      ) {
-        const coordsArray = (rawCoords as any).coordinates;
-        if (
-          Array.isArray(coordsArray) &&
-          coordsArray.length > 0 &&
-          Array.isArray(coordsArray[0]) &&
-          coordsArray[0].length >= 2
-        ) {
-          return true;
-        }
-      }
-
-      return false;
-    });
-
-    let rideLat: number | null = null;
-    let rideLng: number | null = null;
+    let rideLatLng: LatLng | null = null;
 
     if (firstTrailWithCoords) {
-      const rawCoords = firstTrailWithCoords.trail?.coordinates;
-
-      if (
-        Array.isArray(rawCoords) &&
-        Array.isArray(rawCoords[0]) &&
-        rawCoords[0].length >= 2
-      ) {
-        const [lng, lat] = rawCoords[0] as number[];
-        rideLat = typeof lat === "number" ? lat : null;
-        rideLng = typeof lng === "number" ? lng : null;
-      } else if (
-        rawCoords &&
-        typeof rawCoords === "object" &&
-        "coordinates" in rawCoords
-      ) {
-        const coordsArray = (rawCoords as any).coordinates;
-        if (
-          Array.isArray(coordsArray) &&
-          Array.isArray(coordsArray[0]) &&
-          coordsArray[0].length >= 2
-        ) {
-          const [lng, lat] = coordsArray[0] as number[];
-          rideLat = typeof lat === "number" ? lat : null;
-          rideLng = typeof lng === "number" ? lng : null;
-        }
-      }
+      rideLatLng = extractLatLng(firstTrailWithCoords.trail?.coordinates);
     }
 
-    if (rideLat === null || rideLng === null) {
+    if (!rideLatLng) {
       const locationName = ride.location?.trim();
 
       if (locationName) {
@@ -120,34 +111,9 @@ async function processRideNotifications(rideId: string) {
         });
 
         if (locationTrail?.coordinates) {
-          const rawCoords = locationTrail.coordinates;
-
-          if (
-            Array.isArray(rawCoords) &&
-            Array.isArray(rawCoords[0]) &&
-            rawCoords[0].length >= 2
-          ) {
-            const [lng, lat] = rawCoords[0] as number[];
-            rideLat = typeof lat === "number" ? lat : null;
-            rideLng = typeof lng === "number" ? lng : null;
-          } else if (
-            typeof rawCoords === "object" &&
-            rawCoords !== null &&
-            "coordinates" in rawCoords
-          ) {
-            const coordsArray = (rawCoords as any).coordinates;
-            if (
-              Array.isArray(coordsArray) &&
-              Array.isArray(coordsArray[0]) &&
-              coordsArray[0].length >= 2
-            ) {
-              const [lng, lat] = coordsArray[0] as number[];
-              rideLat = typeof lat === "number" ? lat : null;
-              rideLng = typeof lng === "number" ? lng : null;
-            }
-          }
-
-          if (rideLat !== null && rideLng !== null) {
+          const latLng = extractLatLng(locationTrail.coordinates);
+          if (latLng) {
+            rideLatLng = latLng;
             console.info(
               "[notifications] Using coordinates from location match for ride:",
               rideId,
@@ -156,7 +122,7 @@ async function processRideNotifications(rideId: string) {
         }
       }
 
-      if (rideLat === null || rideLng === null) {
+      if (!rideLatLng) {
         console.info(
           "[notifications] Skipping ride without coordinates:",
           rideId,
@@ -165,20 +131,33 @@ async function processRideNotifications(rideId: string) {
       }
     }
 
-    const intendedRecipients = await prisma.user.findMany({
+    const intendedRecipientsRaw = await prisma.user.findMany({
       where: {
         notifyLocalRides: true,
         id: { not: ride.userId },
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        lat: true,
-        lng: true,
-        notificationRadiusMiles: true,
-      },
-    });
+    } as Prisma.UserFindManyArgs);
+
+    type IntendedRecipient = {
+      id: string;
+      email: string | null;
+      name: string | null;
+      lat: number | null;
+      lng: number | null;
+      notificationRadiusMiles: number | null;
+    };
+
+    const intendedRecipients: IntendedRecipient[] = intendedRecipientsRaw.map(
+      (user) => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        lat: (user as { lat?: number | null }).lat ?? null,
+        lng: (user as { lng?: number | null }).lng ?? null,
+        notificationRadiusMiles: (user as { notificationRadiusMiles?: number | null })
+          .notificationRadiusMiles ?? null,
+      }),
+    );
 
     if (!intendedRecipients.length) {
       return;
@@ -215,8 +194,8 @@ async function processRideNotifications(rideId: string) {
         const distance = calculateDistanceMiles(
           recipient.lat,
           recipient.lng,
-          rideLat,
-          rideLng,
+          rideLatLng.lat,
+          rideLatLng.lng,
         );
 
         if (distance > radiusMiles) {

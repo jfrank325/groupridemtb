@@ -11,11 +11,13 @@ type SendLocalRideAlertArgs = {
   html: string;
 };
 
+type MailgunMessageArgs = SendLocalRideAlertArgs;
+
 async function sendMailgunMessage({
   to,
   subject,
   html,
-}: SendLocalRideAlertArgs): Promise<boolean> {
+}: MailgunMessageArgs): Promise<boolean> {
   if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN || !MAILGUN_FROM_EMAIL) {
     console.warn(
       "[mailgun] Missing Mailgun configuration. Skipping email send.",
@@ -65,6 +67,10 @@ export async function sendLocalRideAlert(args: SendLocalRideAlertArgs): Promise<
 }
 
 export async function sendRideCancellationEmail(args: SendLocalRideAlertArgs): Promise<boolean> {
+  return sendMailgunMessage(args);
+}
+
+export async function sendMessageNotificationEmail(args: SendLocalRideAlertArgs): Promise<boolean> {
   return sendMailgunMessage(args);
 }
 

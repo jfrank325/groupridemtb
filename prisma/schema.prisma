@@ -31,6 +31,8 @@ model User {
   // 💬 Messages
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages MessageRecipient[]
+  messageNotifications MessageNotification[]
+  messageNotificationsSent MessageNotification[] @relation("MessageNotificationsSent")
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -85,6 +87,7 @@ model Ride {
   attendees   RideAttendee[]
   trails      RideTrail[]
   messages    Message[]
+  messageNotifications MessageNotification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -134,5 +137,23 @@ model MessageRecipient {
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
   @@id([messageId, userId])
+}
+
+model MessageNotification {
+  id         String   @id @default(cuid())
+  userId     String
+  rideId     String?
+  senderId   String?
+  sourceType String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ride   Ride? @relation(fields: [rideId], references: [id], onDelete: SetNull)
+  sender User? @relation("MessageNotificationsSent", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, rideId])
+  @@index([userId, senderId])
 }
 
