@@ -9,6 +9,7 @@ import { MessageForm } from "./MessageForm";
 import { useUser } from "../context/UserContext";
 import Modal from "./Modal";
 import { formatDate, formatTime, Recurrence } from "@/lib/utils";
+import { ShareRideButton } from "./ShareRideButton";
 
 interface Message {
   id: string;
@@ -51,12 +52,30 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
   const [joinSuccess, setJoinSuccess] = useState<JoinRideSuccess | null>(null);
 
   const [localRide, setLocalRide] = useState<Ride>(ride);
+  const [shareUrl, setShareUrl] = useState<string>(() => {
+    const envOrigin =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
+    return envOrigin ? `${envOrigin}/rides/${ride.id}` : "";
+  });
 
   const currentUserId = user?.id || null;
 
   useEffect(() => {
     setLocalRide(ride);
   }, [ride]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const origin = window.location.origin.replace(/\/$/, "");
+      setShareUrl(`${origin}/rides/${localRide.id}`);
+    } else {
+      const envOrigin =
+        process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
+      if (envOrigin) {
+        setShareUrl(`${envOrigin}/rides/${localRide.id}`);
+      }
+    }
+  }, [localRide.id]);
 
   useEffect(() => {
     async function fetchMessages() {
@@ -126,6 +145,16 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
       ? recurrenceLabels[localRide.recurrence as Exclude<Recurrence, "none">]
       : null;
 
+  const formattedRideDate = formatDate(localRide.date, {
+    includeWeekday: true,
+  });
+  const shareTitle = localRide.name
+    ? `Ride: ${localRide.name}`
+    : "Join this MTB Group Ride";
+  const shareDescription = localRide.location
+    ? `Join me at ${localRide.location} on ${formattedRideDate}.`
+    : `Join me for a group ride on ${formattedRideDate}.`;
+
   const joinRide = async () => {
     if (!localRide?.id) {
       return;
@@ -183,12 +212,21 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
             <h2 className="text-2xl font-semibold text-gray-900">
               {localRide.name || "Untitled Ride"}
             </h2>
-            <Link
-              href={`/rides/${localRide.id}`}
-              className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
-            >
-              View Ride Details
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {shareUrl && (
+                <ShareRideButton
+                  url={shareUrl}
+                  title={shareTitle}
+                  description={shareDescription}
+                />
+              )}
+              <Link
+                href={`/rides/${localRide.id}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+              >
+                View Ride Details
+              </Link>
+            </div>
           </div>
           {localRide.isExample && (
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
@@ -197,7 +235,7 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
             </div>
           )}
           <p className="mb-2">
-            {formatDate(localRide.date, { includeWeekday: true })} @ {formatTime(localRide.date)}
+            {formattedRideDate} @ {formatTime(localRide.date)}
           </p>
           {localRide.location && (
             <p className="mb-2 text-sm text-gray-600">

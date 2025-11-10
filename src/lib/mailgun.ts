@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
 const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
 const MAILGUN_FROM_EMAIL = process.env.MAILGUN_FROM_EMAIL;
+const MAILGUN_FROM_NAME = process.env.MAILGUN_FROM_NAME ?? "MTB Group Ride";
 
 type SendLocalRideAlertArgs = {
   to: string;
@@ -32,7 +33,7 @@ async function sendMailgunMessage({
     const authToken = Buffer.from(`api:${MAILGUN_API_KEY}`).toString("base64");
 
     const payload = new URLSearchParams();
-    payload.append("from", MAILGUN_FROM_EMAIL);
+    payload.append("from", `"${MAILGUN_FROM_NAME}" <${MAILGUN_FROM_EMAIL}>`);
     payload.append("to", to);
     payload.append("subject", subject);
     payload.append("html", html);

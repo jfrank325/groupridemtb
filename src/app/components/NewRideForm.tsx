@@ -9,6 +9,7 @@ import Modal from './Modal';
 import { rideSchema, RideFormData } from '@/lib/validation/rideSchema';
 import { Trail } from '../hooks/useTrails';
 import { createRide } from '../actions/createRide';
+import { ShareRideButton } from './ShareRideButton';
 
 type NewRideFormProps = {
   initialTrailId?: string | null;
@@ -93,6 +94,15 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
       }
     }
   }, [initialTrailId, setValue, trails]);
+
+  const buildShareUrl = (rideId: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin.replace(/\/$/, '')}/rides/${rideId}`;
+    }
+    const envOrigin =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? '';
+    return envOrigin ? `${envOrigin}/rides/${rideId}` : `/rides/${rideId}`;
+  };
 
   const onSubmit = async (data: RideFormData) => {
     setSubmitError(null);
@@ -195,6 +205,11 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
 
   const selectedTrailIds = watch('trailIds') || [];
   const locationValue = (watch('location') || '').trim();
+
+  const successShareUrl = successRide ? buildShareUrl(successRide.id) : null;
+  const successShareDescription = successRide
+    ? `Join me${successRide.location ? ` at ${successRide.location}` : ''} on ${formatDate(successRide.date, { includeWeekday: true })}.`
+    : null;
 
   useEffect(() => {
     if (!locationValue && selectedTrailIds.length > 0) {
@@ -551,6 +566,23 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
               </p>
             )}
           </div>
+
+          {successShareUrl && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+              <p className="text-sm font-medium text-gray-900">Share this ride</p>
+              <p className="mt-1 text-xs text-gray-600">
+                Invite friends or teammates to join you on the trail.
+              </p>
+              <div className="mt-3">
+                <ShareRideButton
+                  url={successShareUrl}
+                  title={`Ride: ${successRide.name || 'Group Ride'}`}
+                  description={successShareDescription ?? undefined}
+                  align="left"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Link

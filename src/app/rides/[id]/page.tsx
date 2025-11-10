@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime, getNextRecurringDate, Recurrence } from "@/lib/utils";
+import { ShareRideButton } from "@/app/components/ShareRideButton";
 
 export default async function RideDetailPage({
   params,
@@ -93,9 +94,19 @@ export default async function RideDetailPage({
       : null;
 
   const rideDate = ride.date;
+  const rideDateLabel = formatDate(rideDate, { includeWeekday: true });
   const rideLocation = (ride as { location?: string | null }).location ?? null;
   const trailDetails = ride.trails.map((entry) => entry.trail);
   const attendeeUsers = ride.attendees.map((attendee) => attendee.user);
+
+  const baseSiteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+    "https://mtbgroupride.com";
+  const shareUrl = `${baseSiteUrl}/rides/${ride.id}`;
+  const shareTitle = ride.name ? `Ride: ${ride.name}` : "Join this MTB Group Ride";
+  const shareDescription = rideLocation
+    ? `Join this ride at ${rideLocation} on ${rideDateLabel}.`
+    : `Join this ride on ${rideDateLabel}.`;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
@@ -110,6 +121,11 @@ export default async function RideDetailPage({
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <ShareRideButton
+              url={shareUrl}
+              title={shareTitle}
+              description={shareDescription}
+            />
             <Link
               href="/rides"
               className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
@@ -137,7 +153,7 @@ export default async function RideDetailPage({
           <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900">Schedule</h2>
             <p className="text-gray-700">
-              <span className="font-medium">Date:</span> {formatDate(rideDate, { includeWeekday: true })}
+              <span className="font-medium">Date:</span> {rideDateLabel}
             </p>
             <p className="text-gray-700">
               <span className="font-medium">Time:</span> {formatTime(rideDate)}
