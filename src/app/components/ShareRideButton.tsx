@@ -13,7 +13,7 @@ interface ShareRideButtonProps {
 type SocialPlatform = {
   name: string;
   href: (url: string, title: string) => string;
-  icon: JSX.Element;
+  icon: React.ReactNode;
 };
 
 const socialPlatforms: SocialPlatform[] = [

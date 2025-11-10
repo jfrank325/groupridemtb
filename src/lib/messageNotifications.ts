@@ -30,7 +30,7 @@ export async function notifyRideMessage(payload: RideMessagePayload) {
       rideId,
       userId: { not: senderId },
       user: {
-        email: { not: null },
+        email: { not: undefined },
         emailNotificationsEnabled: true,
         notifyRideMessages: true,
       },
