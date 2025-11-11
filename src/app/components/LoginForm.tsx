@@ -80,6 +80,12 @@ export default function LoginForm() {
           className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder:text-gray-500"
           required
         />
+        <Link
+          href="/forgot-password"
+          className="mt-2 text-xs font-medium text-emerald-700 underline-offset-2 hover:text-emerald-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        >
+          Forgot your password?
+        </Link>
       </label>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}

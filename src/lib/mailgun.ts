@@ -78,3 +78,7 @@ export async function sendHostJoinNotificationEmail(args: SendLocalRideAlertArgs
   return sendMailgunMessage(args);
 }
 
+export async function sendPasswordResetEmail(args: SendLocalRideAlertArgs): Promise<boolean> {
+  return sendMailgunMessage(args);
+}
+

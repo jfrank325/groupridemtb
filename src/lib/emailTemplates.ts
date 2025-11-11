@@ -226,6 +226,61 @@ export function renderRideCancelledEmail({
   `;
 }
 
+interface PasswordResetEmailParams {
+  recipientName?: string | null;
+  resetUrl: string;
+  expiresMinutes: number;
+}
+
+export function renderPasswordResetEmail({
+  recipientName,
+  resetUrl,
+  expiresMinutes,
+}: PasswordResetEmailParams) {
+  const greetingName = recipientName?.trim() || "there";
+
+  return `
+    <table cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; background-color: #f9fafb; padding: 24px 0;">
+      <tr>
+        <td>
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; width: 100%; max-width: 520px; background-color: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;">
+            <tr>
+              <td>
+                <p style="margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 600; color: #6366f1;">
+                  Password reset requested
+                </p>
+                <h1 style="margin: 0 0 16px; font-size: 24px; line-height: 32px; font-weight: 700; color: #111827;">
+                  Hi ${greetingName},
+                </h1>
+                <p style="margin: 0 0 20px; font-size: 14px; line-height: 22px; color: #4b5563;">
+                  We received a request to reset the password for your MTB Group Ride account. If you made this request, click the button below to choose a new password. This link will expire in ${expiresMinutes} minutes.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0 24px;">
+                <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 24px; border-radius: 9999px; text-align: center; font-size: 14px;">
+                  Reset your password
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p style="margin: 0 0 16px; font-size: 13px; line-height: 20px; color: #6b7280;">
+                  If you didn’t request a password reset, you can safely ignore this email—your password will remain the same.
+                </p>
+                <p style="margin: 0; font-size: 12px; line-height: 18px; color: #9ca3af;">
+                  For security, this link can only be used once. If it expires, you can request a new password reset from the login page.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 interface RideMessageEmailParams {
   rideName: string;
   rideUrl: string;
