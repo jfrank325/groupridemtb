@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Groupride MTB — Project Overview
 
-## Getting Started
+Groupride MTB is a community platform for discovering, hosting, and coordinating mountain bike rides. The stack is optimized for performant data fetching, location-aware experiences, and high deliverability notifications.
 
-First, run the development server:
+## Core Technologies & How We Use Them
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+| Technology | Role in the Project |
+| --- | --- |
+| **Next.js App Router** | Renders server-first UI for pages under `src/app`. Server Components handle data-loading; Client Components (`"use client"`) encapsulate interactive forms, map interactions, and session-dependent UI. |
+| **React** | Functional components with hooks manage client state (e.g., login form state, ride modal interactions). Suspense + lazy loading reduce bundle size. |
+| **TypeScript** | Strict typing across UI, server actions, and Prisma queries. Interfaces document props and domain objects (`Ride`, `UserNotificationPreferences`, etc.). |
+| **Tailwind CSS** | Utility-first styling, responsive design, and accessibility affordances (focus states, status roles). |
+| **Prisma ORM + PostgreSQL** | Schema-managed database with models for rides, trails, users, notifications, and password reset tokens. Prisma Client powers reads/writes in server actions and API routes. |
+| **NextAuth.js** | Credentials-based authentication with secure session handling. Custom callbacks enrich the session with geocoded data. |
+| **MapLibre GL JS** | Interactive map visualizations for rides/trails. Client components orchestrate hover states between map layers and lists. |
+| **Mailgun** | Transactional email delivery for ride notifications, cancellations, message alerts, host joins, and password reset links. |
+| **Zod** | Input validation for server actions and APIs (user registration, preferences updates). |
+| **Rate Limiting (Upstash Ratelimit)** | Protects sensitive endpoints (login, password reset, ride join/leave). Shared helper `lib/rate-limit.ts` enforces limits and responds with standard headers. |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture Highlights
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Server-first data flow:** Pages such as `/rides`, `/profile`, and `/reset-password` use server components to fetch Prisma data and present fully hydrated HTML. Client components are reserved for interactivity.
+- **Domain-driven modules:** Email logic lives in `src/lib/emailTemplates.ts` and `src/lib/mailgun.ts`; notification pipelines live in dedicated modules such as `src/lib/localRideNotifications.ts`.
+- **Reusable API patterns:** Route handlers under `src/app/api/**` handle JSON requests, leverage shared validation helpers, and return normalized payloads for client consumption.
+- **Geospatial awareness:** User ZIP codes are geocoded via `fetchLatLngForZip`; the map highlights trails/locations based on hover interactions and user coordinates.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Key Features
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Ride discovery & management:** Create rides, link trails, join/leave rides, and view detail pages with map context.
+- **Notification suite:** Users can opt into location-based ride alerts, cancellation notices, ride discussion updates, direct messages, and host join alerts. Emails respect preferences and throttle windows.
+- **Password recovery:** Forgot-password requests generate hashed, expiring tokens and send secure reset links via Mailgun.
+- **Trail interactions:** Hovering over rides or trails keeps map visuals in sync with the list UI for better discovery.
