@@ -34,16 +34,70 @@ export function TrailsClient({ trails }: TrailsClientProps) {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
   const [searchCenter, setSearchCenter] = useState<[number, number] | null>(null);
   const [mapZoom, setMapZoom] = useState<number | undefined>(undefined); // undefined = default (9), number = custom zoom
+  const [browserLocation, setBrowserLocation] = useState<[number, number] | null>(null);
+  const [showLocationPrompt, setShowLocationPrompt] = useState<boolean>(false);
+  const [locationPermissionAsked, setLocationPermissionAsked] = useState<boolean>(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recenterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { user } = useUser();
+  const { user, session } = useUser();
 
   const userCenter = useMemo<[number, number] | null>(() => {
+    // First priority: logged-in user's saved location
     if (typeof user?.lat === "number" && typeof user?.lng === "number") {
       return [user.lng, user.lat];
     }
+    // Second priority: browser geolocation (for non-logged-in users)
+    if (browserLocation) {
+      return browserLocation;
+    }
     return null;
-  }, [user?.lat, user?.lng]);
+  }, [user?.lat, user?.lng, browserLocation]);
+
+  const requestBrowserLocation = useCallback(() => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      return;
+    }
+
+    setLocationPermissionAsked(true);
+    setShowLocationPrompt(false);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setBrowserLocation([longitude, latitude]);
+      },
+      (error) => {
+        console.warn("Geolocation error:", error);
+        // Don't show error to user, just silently fail
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000, // Cache for 5 minutes
+      }
+    );
+  }, []);
+
+  // Request browser geolocation for non-logged-in users
+  useEffect(() => {
+    // Only prompt if user is not logged in and we haven't asked yet
+    if (!session && !locationPermissionAsked && typeof window !== "undefined" && "geolocation" in navigator) {
+      // Check if permission was previously denied
+      navigator.permissions?.query({ name: "geolocation" }).then((result) => {
+        if (result.state === "prompt") {
+          // Permission hasn't been asked yet, show prompt
+          setShowLocationPrompt(true);
+        } else if (result.state === "granted") {
+          // Permission already granted, get location
+          requestBrowserLocation();
+        }
+        // If denied, don't show prompt
+      }).catch(() => {
+        // Permissions API not supported, show prompt anyway
+        setShowLocationPrompt(true);
+      });
+    }
+  }, [session, locationPermissionAsked, requestBrowserLocation]);
 
   // Helper function to extract coordinates from a trail
   const extractTrailCenter = useCallback((trail: Trail): [number, number] | null => {
@@ -225,6 +279,39 @@ export function TrailsClient({ trails }: TrailsClientProps) {
 
   return (
     <div className="space-y-8">
+      {/* Location Permission Prompt */}
+      {showLocationPrompt && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-emerald-900 mb-1">
+                Improve your experience
+              </h3>
+              <p className="text-sm text-emerald-700">
+                Allow location access to center the map on your current location and find trails near you.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowLocationPrompt(false);
+                  setLocationPermissionAsked(true);
+                }}
+                className="px-3 py-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-900 transition-colors"
+              >
+                Not now
+              </button>
+              <button
+                onClick={requestBrowserLocation}
+                className="px-4 py-1.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Allow
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search and Filter Section */}
       <div className="w-full">
         {/* Search Bar */}
