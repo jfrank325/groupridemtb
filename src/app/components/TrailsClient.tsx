@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { type Trail } from "../hooks/useTrails";
 import { useUser } from "../context/UserContext";
@@ -37,6 +37,10 @@ export function TrailsClient({ trails }: TrailsClientProps) {
   const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+  const [searchCenter, setSearchCenter] = useState<[number, number] | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recenterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useUser();
 
   const userCenter = useMemo<[number, number] | null>(() => {
@@ -46,7 +50,60 @@ export function TrailsClient({ trails }: TrailsClientProps) {
     return null;
   }, [user?.lat, user?.lng]);
 
-  // Filter trails by difficulty and search query
+  // Helper function to extract coordinates from a trail
+  const extractTrailCenter = useCallback((trail: Trail): [number, number] | null => {
+    // First try lat/lng if available
+    if (typeof trail.lat === "number" && typeof trail.lng === "number") {
+      return [trail.lng, trail.lat];
+    }
+
+    // Then try to extract from coordinates array
+    if (trail.coordinates) {
+      try {
+        // Handle different coordinate formats
+        let coords: number[][] | null = null;
+        
+        if (Array.isArray(trail.coordinates)) {
+          // Check if it's a GeoJSON Geometry object
+          if (trail.coordinates.length > 0 && typeof trail.coordinates[0] === "object") {
+            const first = trail.coordinates[0];
+            // Check if it's a GeoJSON LineString format: [[lng, lat], [lng, lat], ...]
+            if (Array.isArray(first) && first.length >= 2 && typeof first[0] === "number") {
+              coords = trail.coordinates as number[][];
+            }
+          }
+        }
+
+        if (coords && coords.length > 0 && Array.isArray(coords[0]) && coords[0].length >= 2) {
+          const firstCoord = coords[0];
+          return [firstCoord[0], firstCoord[1]]; // [lng, lat]
+        }
+      } catch (error) {
+        console.warn("Error extracting coordinates from trail:", error);
+      }
+    }
+
+    return null;
+  }, []);
+
+  // Debounce search query to prevent map from updating on every keystroke
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Filter trails by difficulty and search query (using debounced search)
   const filteredTrails = useMemo(() => {
     return trails.filter((trail) => {
       // Filter by difficulty
@@ -54,9 +111,9 @@ export function TrailsClient({ trails }: TrailsClientProps) {
         return false;
       }
 
-      // Filter by search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+      // Filter by search query (using debounced value)
+      if (debouncedSearchQuery.trim()) {
+        const query = debouncedSearchQuery.toLowerCase();
         const matchesName = trail.name?.toLowerCase().includes(query);
         const matchesLocation = trail.location?.toLowerCase().includes(query);
         const matchesTrailSystem = trail.trailSystem?.name?.toLowerCase().includes(query) ||
@@ -66,7 +123,42 @@ export function TrailsClient({ trails }: TrailsClientProps) {
 
       return true;
     });
-  }, [trails, filter, searchQuery]);
+  }, [trails, filter, debouncedSearchQuery]);
+
+  // Recenter map on first search result after debounce delay
+  useEffect(() => {
+    // Clear any pending recenter
+    if (recenterTimeoutRef.current) {
+      clearTimeout(recenterTimeoutRef.current);
+    }
+
+    // Only recenter if there's a search query or filter active
+    if (debouncedSearchQuery.trim() || filter !== "all") {
+      if (filteredTrails.length > 0) {
+        // Add additional delay before recentering to avoid too frequent updates
+        recenterTimeoutRef.current = setTimeout(() => {
+          const firstTrail = filteredTrails[0];
+          const center = extractTrailCenter(firstTrail);
+          if (center) {
+            setSearchCenter(center);
+          } else {
+            setSearchCenter(null);
+          }
+        }, 500); // Additional 500ms delay after debounce
+      } else {
+        setSearchCenter(null);
+      }
+    } else {
+      // Clear search center when search/filter is cleared
+      setSearchCenter(null);
+    }
+
+    return () => {
+      if (recenterTimeoutRef.current) {
+        clearTimeout(recenterTimeoutRef.current);
+      }
+    };
+  }, [debouncedSearchQuery, filter, filteredTrails, extractTrailCenter]);
 
   // Get all trails that belong to the same location/trail system
   const getTrailsInLocation = useCallback((trail: Trail): { trails: Trail[]; label: string | null } => {
@@ -158,11 +250,15 @@ export function TrailsClient({ trails }: TrailsClientProps) {
               onChange={(e) => {
                 const newQuery = e.target.value;
                 setSearchQuery(newQuery);
-                // Clear selection when search is cleared and no filter is active
-                if (!newQuery.trim() && filter === "all") {
-                  setSelectedTrailId(null);
-                  setDisplayedTrails([]);
-                  setLocationLabel(null);
+                // Clear debounced value and search center immediately if search is cleared
+                if (!newQuery.trim()) {
+                  setDebouncedSearchQuery("");
+                  setSearchCenter(null);
+                  if (filter === "all") {
+                    setSelectedTrailId(null);
+                    setDisplayedTrails([]);
+                    setLocationLabel(null);
+                  }
                 } else {
                   setSelectedTrailId(null);
                 }
@@ -186,11 +282,12 @@ export function TrailsClient({ trails }: TrailsClientProps) {
             <button
               onClick={() => {
                 setFilter("all");
-                // Clear selection when filter is set to "all" and no search query
+                // Clear selection and search center when filter is set to "all" and no search query
                 if (!searchQuery.trim()) {
                   setSelectedTrailId(null);
                   setDisplayedTrails([]);
                   setLocationLabel(null);
+                  setSearchCenter(null);
                 }
               }}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
@@ -243,17 +340,17 @@ export function TrailsClient({ trails }: TrailsClientProps) {
             <p className="text-sm text-gray-600">Click on a trail to view details</p>
           </div>
           <TrailMap 
-            trails={filteredTrails} 
+            trails={trails} 
             highlightedTrailId={selectedTrailId}
             onTrailClick={handleMapTrailClick}
-            center={userCenter ?? undefined}
+            center={searchCenter ?? userCenter ?? undefined}
           />
         </div>
 
         {/* Trail Cards Section */}
         <div>
           {/* Show search results list when there's a search query or filter, but no selection */}
-          {(searchQuery.trim() || filter !== "all") && displayedTrails.length === 0 && filteredTrails.length > 0 && (
+          {(debouncedSearchQuery.trim() || filter !== "all") && displayedTrails.length === 0 && filteredTrails.length > 0 && (
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 Search Results ({filteredTrails.length} {filteredTrails.length === 1 ? 'trail' : 'trails'})
