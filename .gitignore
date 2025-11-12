@@ -53,3 +53,4 @@ make_user_notifications_work.md
 set_notification_radius_default.sql
 make_user_zip_required.sql
 project-overview.md
+import-osm-trails.ts

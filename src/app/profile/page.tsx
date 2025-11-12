@@ -9,6 +9,7 @@ import Link from "next/link";
 import { MessagesLink } from "../components/MessagesLink";
 import { Prisma } from "@prisma/client";
 import { UserNotificationPreferences } from "../components/UserNotificationPreferences";
+import { PageHeader } from "../components/PageHeader";
 
 export default async function ProfilePage() {
     const session = await getServerSession(authOptions);
@@ -104,22 +105,17 @@ export default async function ProfilePage() {
 
     return (
         <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
-            {/* Hero Section */}
-            <section className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-                    <div className="text-center">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 mb-4">
-                            <span className="text-3xl font-bold text-white">
-                                {session?.user?.name?.charAt(0).toUpperCase() || "U"}
-                            </span>
-                        </div>
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
-                            {session?.user?.name || "User"}'s Profile
-                        </h1>
-                        <p className="text-lg text-gray-600">{session?.user?.email}</p>
+            <PageHeader
+                title={`${session?.user?.name || "User"}'s Profile`}
+                description={session?.user?.email || undefined}
+                prefix={
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500">
+                        <span className="text-3xl font-bold text-white">
+                            {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+                        </span>
                     </div>
-                </div>
-            </section>
+                }
+            />
 
             {/* Profile Content */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
