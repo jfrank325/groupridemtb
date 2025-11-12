@@ -5,17 +5,11 @@ import TrailDetailMapAndCards from "@/app/components/TrailDetailMapAndCards";
 import { type Trail } from "../../hooks/useTrails";
 import { TrailsTrailDetailClient } from "@/app/components/TrailsTrailDetailClient";
 import { formatDistanceValue, formatElevationValue, getNextRecurringDate, Recurrence } from "@/lib/utils";
+import { difficultyColors } from "@/lib/constants";
 
 interface TrailDetailPageProps {
   params: Promise<{ id: string }>;
 }
-
-const difficultyColors = {
-  Easy: "bg-green-100 text-green-700 border-green-200",
-  Beginner: "bg-green-100 text-green-700 border-green-200",
-  Intermediate: "bg-blue-100 text-blue-700 border-blue-200",
-  Advanced: "bg-red-100 text-red-700 border-red-200",
-};
 
 export default async function TrailDetailPage({ params }: TrailDetailPageProps) {
   const { id } = await params;

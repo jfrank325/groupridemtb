@@ -6,6 +6,7 @@ import { type Trail } from "../hooks/useTrails";
 import { useUser } from "../context/UserContext";
 import Link from "next/link";
 import { formatDistanceValue, formatElevationValue } from "@/lib/utils";
+import { difficultyColors } from "@/lib/constants";
 
 // Dynamically import TrailMap to reduce initial bundle size
 const TrailMap = dynamic(() => import("./TrailMap"), {
@@ -24,13 +25,6 @@ interface TrailsClientProps {
   trails: Trail[];
 }
 
-const difficultyColors = {
-  Easy: "bg-green-100 text-green-700 border-green-200",
-  Beginner: "bg-green-100 text-green-700 border-green-200",
-  Intermediate: "bg-blue-100 text-blue-700 border-blue-200",
-  Advanced: "bg-red-100 text-red-700 border-red-200",
-};
-
 export function TrailsClient({ trails }: TrailsClientProps) {
   const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
   const [displayedTrails, setDisplayedTrails] = useState<Trail[]>([]);
@@ -39,6 +33,7 @@ export function TrailsClient({ trails }: TrailsClientProps) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
   const [searchCenter, setSearchCenter] = useState<[number, number] | null>(null);
+  const [mapZoom, setMapZoom] = useState<number | undefined>(undefined); // undefined = default (9), number = custom zoom
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recenterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useUser();
@@ -125,15 +120,15 @@ export function TrailsClient({ trails }: TrailsClientProps) {
     });
   }, [trails, filter, debouncedSearchQuery]);
 
-  // Recenter map on first search result after debounce delay
+  // Recenter map on first search result after debounce delay (only for search, not filters)
   useEffect(() => {
     // Clear any pending recenter
     if (recenterTimeoutRef.current) {
       clearTimeout(recenterTimeoutRef.current);
     }
 
-    // Only recenter if there's a search query or filter active
-    if (debouncedSearchQuery.trim() || filter !== "all") {
+    // Only recenter if there's a search query (not just a filter)
+    if (debouncedSearchQuery.trim()) {
       if (filteredTrails.length > 0) {
         // Add additional delay before recentering to avoid too frequent updates
         recenterTimeoutRef.current = setTimeout(() => {
@@ -141,16 +136,23 @@ export function TrailsClient({ trails }: TrailsClientProps) {
           const center = extractTrailCenter(firstTrail);
           if (center) {
             setSearchCenter(center);
+            setMapZoom(13); // Zoom in closer when showing search results
           } else {
             setSearchCenter(null);
+            setMapZoom(9); // Reset to default zoom
           }
         }, 500); // Additional 500ms delay after debounce
       } else {
         setSearchCenter(null);
+        setMapZoom(9); // Reset to default zoom
       }
     } else {
-      // Clear search center when search/filter is cleared
+      // Clear search center and zoom when search is cleared (but keep map position for filters)
       setSearchCenter(null);
+      // Only reset zoom if there's no active filter
+      if (filter === "all") {
+        setMapZoom(9); // Reset to default zoom
+      }
     }
 
     return () => {
@@ -158,7 +160,7 @@ export function TrailsClient({ trails }: TrailsClientProps) {
         clearTimeout(recenterTimeoutRef.current);
       }
     };
-  }, [debouncedSearchQuery, filter, filteredTrails, extractTrailCenter]);
+  }, [debouncedSearchQuery, filteredTrails, extractTrailCenter, filter]);
 
   // Get all trails that belong to the same location/trail system
   const getTrailsInLocation = useCallback((trail: Trail): { trails: Trail[]; label: string | null } => {
@@ -250,10 +252,11 @@ export function TrailsClient({ trails }: TrailsClientProps) {
               onChange={(e) => {
                 const newQuery = e.target.value;
                 setSearchQuery(newQuery);
-                // Clear debounced value and search center immediately if search is cleared
+                // Clear debounced value, search center, and zoom immediately if search is cleared
                 if (!newQuery.trim()) {
                   setDebouncedSearchQuery("");
                   setSearchCenter(null);
+                  setMapZoom(9); // Reset to default zoom
                   if (filter === "all") {
                     setSelectedTrailId(null);
                     setDisplayedTrails([]);
@@ -282,12 +285,13 @@ export function TrailsClient({ trails }: TrailsClientProps) {
             <button
               onClick={() => {
                 setFilter("all");
-                // Clear selection and search center when filter is set to "all" and no search query
+                // Clear selection, search center, and zoom when filter is set to "all" and no search query
                 if (!searchQuery.trim()) {
                   setSelectedTrailId(null);
                   setDisplayedTrails([]);
                   setLocationLabel(null);
                   setSearchCenter(null);
+                  setMapZoom(9); // Reset to default zoom
                 }
               }}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
@@ -340,10 +344,11 @@ export function TrailsClient({ trails }: TrailsClientProps) {
             <p className="text-sm text-gray-600">Click on a trail to view details</p>
           </div>
           <TrailMap 
-            trails={trails} 
+            trails={filter !== "all" ? filteredTrails : trails} 
             highlightedTrailId={selectedTrailId}
             onTrailClick={handleMapTrailClick}
             center={searchCenter ?? userCenter ?? undefined}
+            zoom={mapZoom}
           />
         </div>
 
@@ -356,11 +361,11 @@ export function TrailsClient({ trails }: TrailsClientProps) {
                 Search Results ({filteredTrails.length} {filteredTrails.length === 1 ? 'trail' : 'trails'})
               </h3>
               <div className="grid grid-cols-1 gap-4">
-                {filteredTrails.slice(0, 5).map((trail) => (
+                {filteredTrails.map((trail) => (
                   <button
                     key={trail.id}
                     onClick={() => handleTrailSelect(trail)}
-                    className="text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-emerald-300 hover:shadow-lg transition-all group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                    className="text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-emerald-300 hover:shadow-lg transition-all group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 cursor-pointer"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -390,11 +395,6 @@ export function TrailsClient({ trails }: TrailsClientProps) {
                     </div>
                   </button>
                 ))}
-                {filteredTrails.length > 5 && (
-                  <p className="text-sm text-gray-500 text-center mt-2">
-                    Click on any trail above to see all trails in that location
-                  </p>
-                )}
               </div>
             </div>
           )}

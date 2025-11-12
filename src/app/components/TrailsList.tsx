@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { type Trail } from "../hooks/useTrails";
 import { formatDistanceValue, formatElevationValue } from "@/lib/utils";
+import { difficultyColors } from "@/lib/constants";
 
 interface TrailsListProps {
   trails: Trail[];
@@ -31,12 +32,6 @@ export function TrailsList({ trails }: TrailsListProps) {
       return true;
     });
   }, [trails, filter, searchQuery]);
-
-  const difficultyColors = {
-    Easy: "bg-green-100 text-green-700 border-green-200",
-    Intermediate: "bg-blue-100 text-blue-700 border-blue-200",
-    Advanced: "bg-red-100 text-red-700 border-red-200",
-  };
 
   return (
     <div className="w-full">

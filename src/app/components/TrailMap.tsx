@@ -12,9 +12,10 @@ interface TrailMapProps {
   onTrailHover?: (trailId: string | null) => void;
   onTrailClick?: (trail: Trail) => void;
   center?: [number, number];
+  zoom?: number;
 }
 
-export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onTrailClick, center }: TrailMapProps) {
+export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onTrailClick, center, zoom }: TrailMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onTrailHoverRef = useRef(onTrailHover);
@@ -121,12 +122,13 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onT
     if (!mapContainer.current || mapRef.current || !maptilerKey) return;
 
     const initialCenter = center ?? [-84.389, 33.75];
+    const initialZoom = zoom ?? 9;
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: `https://api.maptiler.com/maps/outdoor/style.json?key=${maptilerKey}`,
       center: initialCenter,
-      zoom: 9,
+      zoom: initialZoom,
     });
 
     mapRef.current = map;
@@ -183,7 +185,7 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onT
           "line-color": [
             "match",
             ["get", "difficulty"],
-            "Beginner", "#4CAF50",
+            "Easy", "#4CAF50",
             "Intermediate", "#0070f3",
             "Advanced", "#000",
             "#0070f3",
@@ -379,15 +381,25 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onT
   }, [trailCoordinates, trails, isMapLoaded]);
 
   useEffect(() => {
-    if (!mapRef.current || !isMapLoaded || !center) return;
+    if (!mapRef.current || !isMapLoaded) return;
     const map = mapRef.current;
     if (!map.loaded()) return;
 
-    map.easeTo({
-      center,
-      duration: 800,
-    });
-  }, [center, isMapLoaded]);
+    // If center is provided, animate to it
+    if (center) {
+      map.easeTo({
+        center,
+        zoom: zoom ?? 9, // Use provided zoom or default to 9
+        duration: 800,
+      });
+    } else if (zoom !== undefined) {
+      // If only zoom changes without center, just update zoom
+      map.easeTo({
+        zoom: zoom,
+        duration: 800,
+      });
+    }
+  }, [center, zoom, isMapLoaded]);
 
   // Update map styling when highlightedTrailId changes
   useEffect(() => {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type Trail } from "../hooks/useTrails";
 import { formatDistanceValue, formatElevationValue } from "@/lib/utils";
+import { difficultyColors } from "@/lib/constants";
 
 interface RelatedTrailsCardsProps {
   currentTrail: Trail & { trailSystem?: { name: string } };
@@ -10,13 +11,6 @@ interface RelatedTrailsCardsProps {
   highlightedTrailId: string | null;
   onTrailHover: (trailId: string | null) => void;
 }
-
-const difficultyColors = {
-  Easy: "bg-green-100 text-green-700 border-green-200",
-  Beginner: "bg-green-100 text-green-700 border-green-200",
-  Intermediate: "bg-blue-100 text-blue-700 border-blue-200",
-  Advanced: "bg-red-100 text-red-700 border-red-200",
-};
 
 export default function RelatedTrailsCards({
   currentTrail,

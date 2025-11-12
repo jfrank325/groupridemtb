@@ -131,7 +131,6 @@ export default function TrailMapSingle({ trail, relatedTrails = [], highlightedT
               "match",
               ["get", "difficulty"],
               "Easy", "#4CAF50",
-              "Beginner", "#4CAF50",
               "Intermediate", "#0070f3",
               "Advanced", "#000",
               "#0070f3",
