@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { TrailsList } from "../components/TrailsList";
+import { TrailsClient } from "../components/TrailsClient";
 import { type Trail } from "../hooks/useTrails";
 import type { Metadata } from "next";
 import { PageHeader } from "../components/PageHeader";
@@ -35,9 +35,9 @@ export default async function Trails() {
                 description="Discover amazing trails for every skill level. From beginner-friendly paths to challenging adventures."
             />
 
-            {/* Trails Listing */}
+            {/* Trails Map and Cards */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <TrailsList trails={trails} />
+                <TrailsClient trails={trails} />
             </section>
         </main>
     );

@@ -10,13 +10,15 @@ interface TrailMapProps {
   trails: Trail[];
   highlightedTrailId?: string | null;
   onTrailHover?: (trailId: string | null) => void;
+  onTrailClick?: (trail: Trail) => void;
   center?: [number, number];
 }
 
-export default function TrailMap({ trails, highlightedTrailId, onTrailHover, center }: TrailMapProps) {
+export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onTrailClick, center }: TrailMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onTrailHoverRef = useRef(onTrailHover);
+  const onTrailClickRef = useRef(onTrailClick);
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
   const [selectedTrail, setSelectedTrail] = useState<Partial<Trail> | null>(null);
@@ -30,10 +32,14 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover, cen
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const isTouchDeviceRef = useRef(false);
 
-  // Keep the ref updated with the latest callback
+  // Keep the refs updated with the latest callbacks
   useEffect(() => {
     onTrailHoverRef.current = onTrailHover;
   }, [onTrailHover]);
+
+  useEffect(() => {
+    onTrailClickRef.current = onTrailClick;
+  }, [onTrailClick]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -204,6 +210,11 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover, cen
         if (hideTimeoutRef.current) {
           clearTimeout(hideTimeoutRef.current);
           hideTimeoutRef.current = null;
+        }
+
+        // Call onTrailClick callback if provided
+        if (onTrailClickRef.current) {
+          onTrailClickRef.current(trail);
         }
 
         if (isTouchDeviceRef.current) {

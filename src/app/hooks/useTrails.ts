@@ -18,6 +18,7 @@ export type Trail = {
   trailSystem?: {
     id?: string | null;
     name: string | null;
+    location?: string | null;
   } | null;
   lat: number | null;
   lng: number | null;
