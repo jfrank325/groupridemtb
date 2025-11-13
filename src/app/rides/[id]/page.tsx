@@ -117,14 +117,37 @@ export default async function RideDetailPage({
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm text-gray-600">
+          <Link
+            href="/rides"
+            className="hover:text-emerald-600 transition-colors"
+          >
+            Rides
+          </Link>
+          <svg
+            className="w-4 h-4 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          <span className="text-gray-900 font-medium">
+            {ride.name || "Untitled Ride"}
+          </span>
+        </nav>
+
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
               {ride.name || "Untitled Ride"}
             </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Ride ID: <span className="font-mono text-gray-700">{ride.id}</span>
-            </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <ShareRideButton
@@ -140,12 +163,6 @@ export default async function RideDetailPage({
               loginHref={loginHref}
               rideName={ride.name}
             />
-            <Link
-              href="/rides"
-              className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-            >
-              ← Back to Rides
-            </Link>
             <Link
               href="/rides/new"
               className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
