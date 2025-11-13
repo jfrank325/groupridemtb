@@ -237,16 +237,21 @@ export default async function RideDetailPage({
           {trailDetails.length > 0 ? (
             <ul className="grid gap-3 sm:grid-cols-2">
               {trailDetails.map((trail) => (
-                <li key={trail.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <p className="font-medium text-gray-900">{trail.name}</p>
-                  {trail.location && (
-                    <p className="text-xs text-gray-600 mt-1">{trail.location}</p>
-                  )}
-                  {trail.difficulty && (
-                    <span className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                      {trail.difficulty}
-                    </span>
-                  )}
+                <li key={trail.id}>
+                  <Link
+                    href={`/trails/${trail.id}`}
+                    className="block rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-emerald-300 hover:bg-emerald-50"
+                  >
+                    <p className="font-medium text-gray-900">{trail.name}</p>
+                    {trail.location && (
+                      <p className="text-xs text-gray-600 mt-1">{trail.location}</p>
+                    )}
+                    {trail.difficulty && (
+                      <span className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                        {trail.difficulty}
+                      </span>
+                    )}
+                  </Link>
                 </li>
               ))}
             </ul>

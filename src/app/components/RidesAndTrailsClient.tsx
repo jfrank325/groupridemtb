@@ -6,6 +6,7 @@ import { RidesList } from "./RidesList";
 import { type Ride } from "../hooks/useRides";
 import { type Trail } from "../hooks/useTrails";
 import { useUser } from "../context/UserContext";
+import { calculateSimilarity } from "@/lib/utils";
 
 // Dynamically import TrailMap to reduce initial bundle size
 const TrailMap = dynamic(() => import("./TrailMap"), {
@@ -26,7 +27,7 @@ interface RidesAndTrailsClientProps {
 }
 
 export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProps) => {
-  const [highlightedTrailId, setHighlightedTrailId] = useState<string | null>(null);
+  const [highlightedTrailIds, setHighlightedTrailIds] = useState<string[]>([]);
   const [highlightedRideIds, setHighlightedRideIds] = useState<string[]>([]);
   const { user } = useUser();
 
@@ -41,11 +42,12 @@ export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProp
   const handleTrailHover = useCallback((trailId: string | null) => {
     if (!trailId) {
       setHighlightedRideIds([]);
+      setHighlightedTrailIds([]);
       return;
     }
 
     // Highlight the trail on the map
-    setHighlightedTrailId(trailId);
+    setHighlightedTrailIds([trailId]);
 
     // Find all rides that include this trail
     const ridesWithTrail = rides
@@ -55,23 +57,71 @@ export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProp
     setHighlightedRideIds(ridesWithTrail);
   }, [rides]);
 
+  // When a ride card is hovered, highlight all its trails or find trails by location match
+  const handleRideHover = useCallback((ride: Ride | null) => {
+    if (!ride) {
+      setHighlightedTrailIds([]);
+      return;
+    }
+
+    // If ride has associated trails, use those
+    if (ride.trailIds && ride.trailIds.length > 0) {
+      setHighlightedTrailIds(ride.trailIds);
+      return;
+    }
+
+    // If no trails but has location, try to find trails by location matching
+    if (ride.location) {
+      const matchingTrailIds = new Set<string>();
+      const rideLocation = ride.location.trim();
+      
+      trails.forEach((trail) => {
+        // Check trail location
+        if (trail.location) {
+          const similarity = calculateSimilarity(rideLocation, trail.location);
+          if (similarity >= 0.8) {
+            matchingTrailIds.add(trail.id);
+            return; // Skip checking trail system if trail location matches
+          }
+        }
+        
+        // Check trail system location
+        if (trail.trailSystem?.location) {
+          const similarity = calculateSimilarity(rideLocation, trail.trailSystem.location);
+          if (similarity >= 0.8) {
+            matchingTrailIds.add(trail.id);
+          }
+        }
+      });
+
+      if (matchingTrailIds.size > 0) {
+        setHighlightedTrailIds(Array.from(matchingTrailIds));
+      } else {
+        setHighlightedTrailIds([]);
+      }
+    } else {
+      setHighlightedTrailIds([]);
+    }
+  }, [trails]);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row gap-8 w-full">
         <RidesList 
           title="Upcoming Rides" 
           rides={rides}
-          onTrailHover={setHighlightedTrailId}
+          onTrailHover={(trailId) => handleTrailHover(trailId)}
+          onRideHover={handleRideHover}
           highlightedRideIds={highlightedRideIds}
         />
         <div className="flex-1 lg:sticky lg:top-20 lg:self-start">
           <div className="mb-4">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Trail Map</h2>
-            <p className="text-sm text-gray-600">Hover over trails on the map or trail names in the rides list to see connections</p>
+            <p className="text-sm text-gray-600">Hover over rides or trails on the map to see connections</p>
           </div>
           <TrailMap 
             trails={trails} 
-            highlightedTrailId={highlightedTrailId}
+            highlightedTrailIds={highlightedTrailIds}
             onTrailHover={handleTrailHover}
             center={userCenter ?? undefined}
           />

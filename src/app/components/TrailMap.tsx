@@ -8,14 +8,14 @@ import TrailHoverPopup from "./TrailHoverPopup";
 
 interface TrailMapProps {
   trails: Trail[];
-  highlightedTrailId?: string | null;
+  highlightedTrailIds?: string[];
   onTrailHover?: (trailId: string | null) => void;
   onTrailClick?: (trail: Trail) => void;
   center?: [number, number];
   zoom?: number;
 }
 
-export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onTrailClick, center, zoom }: TrailMapProps) {
+export default function TrailMap({ trails, highlightedTrailIds = [], onTrailHover, onTrailClick, center, zoom }: TrailMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onTrailHoverRef = useRef(onTrailHover);
@@ -401,7 +401,7 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onT
     }
   }, [center, zoom, isMapLoaded]);
 
-  // Update map styling when highlightedTrailId changes
+  // Update map styling and markers when highlightedTrailIds changes
   useEffect(() => {
     if (!mapRef.current || !isMapLoaded) return;
 
@@ -410,28 +410,143 @@ export default function TrailMap({ trails, highlightedTrailId, onTrailHover, onT
     // Check if map is loaded and layer exists
     if (!map.loaded() || !map.getLayer("trail-lines")) return;
 
-    const highlightId = highlightedTrailId || "";
+    const highlightIds = highlightedTrailIds || [];
 
     try {
-      map.setPaintProperty("trail-lines", "line-width", [
-        "case",
-        ["==", ["get", "id"], highlightId],
-        4,
-        3,
-      ]);
+      // Update trail line styling - dim non-highlighted trails when something is highlighted
+      if (highlightIds.length > 0) {
+        map.setPaintProperty("trail-lines", "line-opacity", [
+          "case",
+          ["in", ["get", "id"], ["literal", highlightIds]],
+          1, // highlighted opacity
+          0.3, // dimmed opacity for non-highlighted
+        ]);
+      } else {
+        map.setPaintProperty("trail-lines", "line-opacity", 1);
+      }
 
-      map.setPaintProperty("trail-lines", "line-opacity", [
-        "case",
-        ["==", ["get", "id"], highlightId],
-        1,
-        ["!=", highlightId, ""],
-        0.5,
-        1,
-      ]);
+      // Remove existing highlight markers source and layer if they exist
+      if (map.getLayer("highlight-markers")) {
+        map.removeLayer("highlight-markers");
+      }
+      if (map.getSource("highlight-markers")) {
+        map.removeSource("highlight-markers");
+      }
+
+      // Add pinpoint markers for highlighted trails
+      if (highlightIds.length > 0) {
+        const markerFeatures: GeoJSON.Feature<GeoJSON.Point>[] = [];
+
+        highlightIds.forEach((trailId) => {
+          const trail = trails.find(t => t.id === trailId);
+          if (!trail) return;
+
+          // Get coordinates for the marker
+          let lng: number | null = null;
+          let lat: number | null = null;
+
+          // Prefer lat/lng if available
+          if (trail.lng !== null && trail.lat !== null) {
+            lng = trail.lng;
+            lat = trail.lat;
+          } else {
+            // Otherwise use coordinates
+            let coordinates: [number, number][] | null = null;
+            if (trailCoordinates.has(trail.id)) {
+              coordinates = trailCoordinates.get(trail.id)!;
+            } else if (trail.coordinates) {
+              coordinates = trail.coordinates as unknown as [number, number][];
+            }
+
+            if (coordinates && coordinates.length > 0) {
+              // Use middle point of trail
+              const midIndex = Math.floor(coordinates.length / 2);
+              [lng, lat] = coordinates[midIndex];
+            }
+          }
+
+          if (lng !== null && lat !== null) {
+            markerFeatures.push({
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: [lng, lat],
+              },
+              properties: {
+                id: trail.id,
+                name: trail.name,
+              },
+            });
+          }
+        });
+
+        if (markerFeatures.length > 0) {
+          const markerGeojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+            type: "FeatureCollection",
+            features: markerFeatures,
+          };
+
+          map.addSource("highlight-markers", {
+            type: "geojson",
+            data: markerGeojson,
+          });
+
+          // Add image for pin icon if not already loaded
+          const addMarkerLayer = () => {
+            if (map.getLayer("highlight-markers")) return;
+
+            if (!map.hasImage("pin-icon")) {
+              // Create a simple pin icon using SVG data URL
+              const pinSvg = `
+                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 0C10.477 0 6 4.477 6 10c0 5.523 10 22 10 22s10-16.477 10-22C26 4.477 21.523 0 16 0z" fill="#ef4444" stroke="#ffffff" stroke-width="2"/>
+                  <circle cx="16" cy="10" r="4" fill="#ffffff"/>
+                </svg>
+              `;
+              
+              const img = new Image(32, 32);
+              img.onload = () => {
+                if (!map.hasImage("pin-icon")) {
+                  map.addImage("pin-icon", img);
+                }
+                // Add layer after image is loaded
+                if (!map.getLayer("highlight-markers")) {
+                  map.addLayer({
+                    id: "highlight-markers",
+                    type: "symbol",
+                    source: "highlight-markers",
+                    layout: {
+                      "icon-image": "pin-icon",
+                      "icon-size": 1,
+                      "icon-anchor": "bottom",
+                    },
+                  });
+                }
+              };
+              img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(pinSvg);
+            } else {
+              // Image already loaded, add layer immediately
+              map.addLayer({
+                id: "highlight-markers",
+                type: "symbol",
+                source: "highlight-markers",
+                layout: {
+                  "icon-image": "pin-icon",
+                  "icon-size": 1,
+                  "icon-anchor": "bottom",
+                },
+              });
+            }
+          };
+
+          addMarkerLayer();
+        }
+      }
     } catch (error) {
-      console.error("Error updating map paint properties:", error);
+      console.error("Error updating map markers:", error);
     }
-  }, [highlightedTrailId, isMapLoaded]);
+  }, [highlightedTrailIds, isMapLoaded, trails, trailCoordinates]);
+
 
   const handleShowMore = (trail: Trail) => {
     // Clear any pending timeouts

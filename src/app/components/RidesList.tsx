@@ -10,10 +10,11 @@ interface RidesListProps {
     title: string;
     rides: Ride[];
     onTrailHover?: (trailId: string | null) => void;
+    onRideHover?: (ride: Ride | null) => void;
     highlightedRideIds?: string[];
 }
 
-export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] }: RidesListProps) => {
+export const RidesList = ({ title, rides, onTrailHover, onRideHover, highlightedRideIds = [] }: RidesListProps) => {
     const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
     const [internalRides, setInternalRides] = useState<Ride[]>(rides);
 
@@ -58,6 +59,12 @@ export const RidesList = ({ title, rides, onTrailHover, highlightedRideIds = [] 
                                 key={ride.id}
                                 type="button"
                                 onClick={() => setSelectedRide(ride)}
+                                onMouseEnter={() => {
+                                    onRideHover?.(ride);
+                                }}
+                                onMouseLeave={() => {
+                                    onRideHover?.(null);
+                                }}
                                 className={`w-full bg-white rounded-xl border p-6 text-left transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
                                     isHighlighted
                                         ? "border-emerald-500 shadow-lg bg-emerald-50/30"
