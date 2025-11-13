@@ -79,7 +79,7 @@ export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProp
         // Check trail location
         if (trail.location) {
           const similarity = calculateSimilarity(rideLocation, trail.location);
-          if (similarity >= 0.8) {
+          if (similarity >= 0.7) {
             matchingTrailIds.add(trail.id);
             return; // Skip checking trail system if trail location matches
           }
@@ -88,7 +88,7 @@ export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProp
         // Check trail system location
         if (trail.trailSystem?.location) {
           const similarity = calculateSimilarity(rideLocation, trail.trailSystem.location);
-          if (similarity >= 0.8) {
+          if (similarity >= 0.7) {
             matchingTrailIds.add(trail.id);
           }
         }

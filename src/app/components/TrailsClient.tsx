@@ -432,7 +432,7 @@ export function TrailsClient({ trails }: TrailsClientProps) {
           </div>
           <TrailMap 
             trails={filter !== "all" ? filteredTrails : trails} 
-            highlightedTrailId={selectedTrailId}
+            highlightedTrailIds={selectedTrailId ? [selectedTrailId] : []}
             onTrailClick={handleMapTrailClick}
             center={searchCenter ?? userCenter ?? undefined}
             zoom={mapZoom}
