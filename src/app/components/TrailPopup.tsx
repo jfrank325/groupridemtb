@@ -7,6 +7,7 @@ import { useUser } from "@/app/context/UserContext";
 import Modal from "./Modal";
 import { formatDistance, formatElevation, formatDate, formatTime, Recurrence } from "@/lib/utils";
 import { difficultyColors } from "@/lib/constants";
+import { TruncatedText } from "./TruncatedText";
 
 interface TrailPopupProps {
     trail: Partial<Trail>;
@@ -373,9 +374,13 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                                                     {attendeeCount} {attendeeCount === 1 ? "rider" : "riders"}
                                                 </p>
                                                 {ride.notes && (
-                                                    <p className="text-sm text-gray-700 mt-3 border-t border-gray-200 pt-2">
-                                                        {ride.notes}
-                                                    </p>
+                                                    <div className="mt-3 border-t border-gray-200 pt-2">
+                                                        <TruncatedText
+                                                            text={ride.notes}
+                                                            maxLength={200}
+                                                            className="text-sm text-gray-700"
+                                                        />
+                                                    </div>
                                                 )}
                                             </div>
                                             <div className="flex flex-col gap-2 md:items-end">

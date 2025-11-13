@@ -10,6 +10,7 @@ import { useUser } from "../context/UserContext";
 import Modal from "./Modal";
 import { formatDate, formatTime, Recurrence } from "@/lib/utils";
 import { ShareRideButton } from "./ShareRideButton";
+import { TruncatedText } from "./TruncatedText";
 
 interface Message {
   id: string;
@@ -293,7 +294,13 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
             </p>
           )}
           {localRide.notes && (
-            <p className="mb-4">{localRide.notes}</p>
+            <div className="mb-4">
+              <TruncatedText
+                text={localRide.notes}
+                maxLength={200}
+                className="text-gray-700"
+              />
+            </div>
           )}
           {(localRide.trailNames.length > 0 || localRide.location) && (
             <div className="mb-4">
