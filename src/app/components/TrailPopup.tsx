@@ -272,21 +272,21 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                     </div>
 
                     {/* Stats Grid */}
-                    {(trail.distanceKm || trail.elevationGainM || trail.elevationLossM) && (
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                            {trail.distanceKm && (
+                    {(trail.distanceKm != null || trail.elevationGainM != null || trail.elevationLossM != null) && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                            {trail.distanceKm != null && (
                                 <div>
                                     <p className="text-xs text-gray-500 mb-1">Distance</p>
                                     <p className="text-lg font-semibold text-gray-900">{formatDistance(trail.distanceKm)}</p>
                                 </div>
                             )}
-                            {trail.elevationGainM && (
+                            {trail.elevationGainM != null && (
                                 <div>
                                     <p className="text-xs text-gray-500 mb-1">Elevation Gain</p>
                                     <p className="text-lg font-semibold text-gray-900">{formatElevation(trail.elevationGainM)}</p>
                                 </div>
                             )}
-                            {trail.elevationLossM && (
+                            {trail.elevationLossM != null && (
                                 <div>
                                     <p className="text-xs text-gray-500 mb-1">Elevation Loss</p>
                                     <p className="text-lg font-semibold text-gray-900">{formatElevation(trail.elevationLossM)}</p>
