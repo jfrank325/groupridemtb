@@ -114,7 +114,7 @@ export const RidesAndTrailsClient = ({ rides, trails }: RidesAndTrailsClientProp
           onRideHover={handleRideHover}
           highlightedRideIds={highlightedRideIds}
         />
-        <div className="flex-1 lg:sticky lg:top-20 lg:self-start">
+        <div className="flex-1 w-full lg:sticky lg:top-20 lg:self-start">
           <div className="mb-4">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Trail Map</h2>
             <p className="text-sm text-gray-600">Hover over rides or trails on the map to see connections</p>

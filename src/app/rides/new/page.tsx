@@ -13,11 +13,16 @@ export default async function NewRidePage({
 }) {
     const resolvedSearchParams = await searchParams;
     const rawTrailId = resolvedSearchParams?.trailId;
+    const rawDate = resolvedSearchParams?.date;
     const session = await getServerSession(authOptions);
     const trailId = Array.isArray(rawTrailId) ? rawTrailId[0] : rawTrailId;
+    const dateParam = Array.isArray(rawDate) ? rawDate[0] : rawDate;
 
     if (!session) {
-        const callbackPath = trailId ? `/rides/new?trailId=${encodeURIComponent(trailId)}` : "/rides/new";
+        const params = new URLSearchParams();
+        if (trailId) params.set('trailId', trailId);
+        if (dateParam) params.set('date', dateParam);
+        const callbackPath = params.toString() ? `/rides/new?${params.toString()}` : "/rides/new";
         redirect(`/login?callbackUrl=${encodeURIComponent(callbackPath)}&authMessage=create-ride`);
     }
 
@@ -37,7 +42,7 @@ export default async function NewRidePage({
             {/* Form Section */}
             <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 md:p-8">
-                    <NewRideForm initialTrailId={trailId ?? null} trails={trailsData} />
+                    <NewRideForm initialTrailId={trailId ?? null} initialDate={dateParam ?? null} trails={trailsData} />
                 </div>
                 <div className="mt-6 text-center">
                     <Link 

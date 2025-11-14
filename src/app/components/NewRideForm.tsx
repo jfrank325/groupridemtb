@@ -13,10 +13,11 @@ import { ShareRideButton } from './ShareRideButton';
 
 type NewRideFormProps = {
   initialTrailId?: string | null;
+  initialDate?: string | null;
   trails: Partial<Trail>[];
 };
 
-export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
+export function NewRideForm({ initialTrailId, initialDate, trails }: NewRideFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -75,8 +76,26 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
     defaultValues: {
       name: '',
       trailIds: initialTrailId ? [initialTrailId] : [],
-      date: '',
-      time: '08:00',
+      date: initialDate ? (() => {
+        try {
+          const date = new Date(initialDate);
+          // Format as YYYY-MM-DD for date input
+          return date.toISOString().split('T')[0];
+        } catch {
+          return '';
+        }
+      })() : '',
+      time: initialDate ? (() => {
+        try {
+          const date = new Date(initialDate);
+          // Format as HH:MM for time input
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${hours}:${minutes}`;
+        } catch {
+          return '08:00';
+        }
+      })() : '08:00',
       durationMin: 120,
       notes: '',
       location: '',
@@ -86,6 +105,19 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
 
   // Keep it reactive if search params change
   useEffect(() => {
+    if (initialDate) {
+      try {
+        const date = new Date(initialDate);
+        const dateStr = date.toISOString().split('T')[0];
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const timeStr = `${hours}:${minutes}`;
+        setValue('date', dateStr);
+        setValue('time', timeStr);
+      } catch {
+        // Invalid date, ignore
+      }
+    }
     if (initialTrailId) {
       setValue('trailIds', [initialTrailId]);
       const initialTrail = trails.find((trail) => trail.id === initialTrailId);
@@ -93,7 +125,7 @@ export function NewRideForm({ initialTrailId, trails }: NewRideFormProps) {
         setValue('location', initialTrail.location, { shouldDirty: false, shouldTouch: false });
       }
     }
-  }, [initialTrailId, setValue, trails]);
+  }, [initialTrailId, initialDate, setValue, trails]);
 
   const buildShareUrl = (rideId: string) => {
     if (typeof window !== 'undefined') {
