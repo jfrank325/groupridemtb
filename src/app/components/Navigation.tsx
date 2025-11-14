@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import Login from "./Login";
 import { MessagesIcon } from "./MessagesIcon";
 import { Session } from "next-auth";
+import { useUser } from "../context/UserContext";
 
 interface NavigationProps {
   session: Session | null;
@@ -13,27 +14,7 @@ interface NavigationProps {
 
 export function Navigation({ session }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    if (!session) return;
-
-    async function fetchUnreadCount() {
-      try {
-        const res = await fetch("/api/messages/unread-count");
-        if (res.ok) {
-          const data = await res.json();
-          setUnreadCount(data.count || 0);
-        }
-      } catch (error) {
-        console.error("Failed to fetch unread count", error);
-      }
-    }
-
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, [session]);
+  const { unreadMessageCount } = useUser();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -183,9 +164,9 @@ export function Navigation({ session }: NavigationProps) {
                         />
                       </svg>
                       <span>Messages</span>
-                      {unreadCount > 0 && (
+                      {unreadMessageCount > 0 && (
                         <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center" suppressHydrationWarning>
-                          {unreadCount > 9 ? "9+" : unreadCount}
+                          {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
                         </span>
                       )}
                     </Link>

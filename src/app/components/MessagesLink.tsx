@@ -1,29 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "../context/UserContext";
 
 export function MessagesLink() {
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    async function fetchUnreadCount() {
-      try {
-        const res = await fetch("/api/messages/unread-count");
-        if (res.ok) {
-          const data = await res.json();
-          setUnreadCount(data.count || 0);
-        }
-      } catch (error) {
-        console.error("Failed to fetch unread count", error);
-      }
-    }
-
-    fetchUnreadCount();
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const { unreadMessageCount } = useUser();
 
   return (
     <Link
@@ -47,9 +28,9 @@ export function MessagesLink() {
         </svg>
         <span>Messages</span>
       </div>
-      {unreadCount > 0 && (
+      {unreadMessageCount > 0 && (
         <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center" suppressHydrationWarning>
-          {unreadCount > 9 ? "9+" : unreadCount}
+          {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
         </span>
       )}
     </Link>

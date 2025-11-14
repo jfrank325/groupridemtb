@@ -65,7 +65,7 @@ interface Conversation {
 }
 
 export function MessagesClient() {
-  const { user } = useUser();
+  const { user, refreshUnreadCount } = useUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,6 +112,7 @@ export function MessagesClient() {
         method: "PUT",
       });
       fetchConversations();
+      refreshUnreadCount(); // Update unread count immediately
     } catch (error) {
       console.error("Failed to mark message as read", error);
     }
