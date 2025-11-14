@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime, getNextRecurringDate, Recurrence } from "@/lib/utils";
 import { ShareRideButton } from "@/app/components/ShareRideButton";
 import { RideAttendanceActions } from "@/app/components/RideAttendanceActions";
+import { TruncatedText } from "@/app/components/TruncatedText";
 
 export default async function RideDetailPage({
   params,
@@ -263,7 +264,11 @@ export default async function RideDetailPage({
         {ride.notes && (
           <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Notes</h2>
-            <p className="text-gray-700 whitespace-pre-line">{ride.notes}</p>
+            <TruncatedText
+              text={ride.notes}
+              maxLength={999999}
+              className="text-gray-700 whitespace-pre-line"
+            />
           </section>
         )}
       </div>

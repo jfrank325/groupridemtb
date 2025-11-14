@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
 import Modal from "./Modal";
 import { formatDate, formatTime, Recurrence } from "@/lib/utils";
+import { TruncatedText } from "./TruncatedText";
 
 interface RawRide {
   id: string;
@@ -335,9 +336,13 @@ export function TrailsTrailDetailClient({
                     </div>
 
                     {ride.notes && (
-                      <p className="text-gray-700 mb-4 whitespace-pre-line">
-                        {ride.notes}
-                      </p>
+                      <div className="mb-4">
+                        <TruncatedText
+                          text={ride.notes}
+                          maxLength={999999}
+                          className="text-gray-700 whitespace-pre-line"
+                        />
+                      </div>
                     )}
 
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">

@@ -205,10 +205,51 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
     };
 
 
+    // Prevent scroll events from propagating to the map
+    const handleWheel = (e: React.WheelEvent) => {
+        e.stopPropagation();
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        e.stopPropagation();
+    };
+
+    // Disable map interactions when popup is open
+    useEffect(() => {
+        if (!map) return;
+
+        // Disable map scroll/pan when popup is open
+        map.scrollZoom.disable();
+        map.boxZoom.disable();
+        map.dragRotate.disable();
+        map.dragPan.disable();
+        map.keyboard.disable();
+        map.doubleClickZoom.disable();
+        map.touchZoomRotate.disable();
+
+        return () => {
+            // Re-enable map interactions when popup closes
+            map.scrollZoom.enable();
+            map.boxZoom.enable();
+            map.dragRotate.enable();
+            map.dragPan.enable();
+            map.keyboard.enable();
+            map.doubleClickZoom.enable();
+            map.touchZoomRotate.enable();
+        };
+    }, [map]);
+
     return (
         <>
+        {/* Backdrop overlay to prevent map interaction */}
         <div 
-            className="absolute z-10 bg-white rounded-xl border border-gray-200 shadow-xl max-w-lg w-[90vw] max-h-[85vh] overflow-y-auto"
+            className="fixed inset-0 z-[5] bg-black/20"
+            onClick={onClose}
+            onWheel={handleWheel}
+            onTouchMove={handleTouchMove}
+        />
+        <div 
+            className="fixed z-10 bg-white rounded-xl border border-gray-200 shadow-xl max-w-lg w-[90vw] max-h-[85vh] flex flex-col"
             style={{
                 left: '50%',
                 top: '50%',
@@ -216,8 +257,11 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
             }}
             role="dialog"
             aria-labelledby="trail-popup-title"
+            onWheel={handleWheel}
+            onTouchMove={handleTouchMove}
+            onClick={(e) => e.stopPropagation()}
         >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between z-10">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between">
                 <div className="flex-1 pr-4">
                     <h2 id="trail-popup-title" className="text-xl font-bold text-gray-900 mb-2">
                         {trail.name || "Trail Details"}
@@ -245,7 +289,7 @@ export default function TrailPopup({ trail, map, onClose }: TrailPopupProps) {
                 </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* Trail Info Section */}
                 <div className="space-y-4">
                     {/* Location and Difficulty */}
