@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/prisma";
-import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords, getNextRecurringDate, Recurrence } from "@/lib/utils";
+import { getDeterministicCoords, getNextRecurringDate, Recurrence } from "@/lib/utils";
 import { RidesAndTrailsClient } from "./RidesAndTrailsClient";
 import { type Ride } from "../hooks/useRides";
 import { type Trail } from "../hooks/useTrails";
 
 export const RidesAndTrailsServer = async () => {
   // Fetch rides data
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  
   const rideInclude = {
     trails: {
       include: {
@@ -17,14 +21,16 @@ export const RidesAndTrailsServer = async () => {
   } as const;
 
   const ridesData = await prisma.ride.findMany({
+    where: {
+      date: {
+          gte: startOfToday,
+      },
+  },
     orderBy: { date: "asc" },
     include: rideInclude,
   });
 
-  // Transform rides into frontend-ready structure
-  const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
 
-  const now = new Date();
   const normalizedRidesData = await Promise.all(
     ridesData.map(async (rideRecord) => {
       const recurrenceValue = (rideRecord as typeof rideRecord & { recurrence?: string | null }).recurrence ?? "none";
@@ -41,7 +47,7 @@ export const RidesAndTrailsServer = async () => {
   );
 
   const rides: Ride[] = normalizedRidesData
-    .filter((ride) => ride.date > now)
+    .filter((ride) => ride.date > startOfToday)
     .map((ride) => {
     const rideTrails = ride.trails.map((rt) => rt.trail);
     const location = (ride as typeof ride & { location?: string | null }).location ?? null;
@@ -52,7 +58,6 @@ export const RidesAndTrailsServer = async () => {
       location,
       recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
       createdAt: ride.createdAt.toISOString(),
-      isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
       date: ride.date.toISOString(),
       trailIds: rideTrails.map((t) => t.id),
       trailNames: rideTrails.map((t) => t.name),

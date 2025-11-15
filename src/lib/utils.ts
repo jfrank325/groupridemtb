@@ -61,9 +61,6 @@ export async function fetchLatLngForZip(zip: string): Promise<{ lat: number; lng
   }
 }
 
-export const EXAMPLE_RIDE_CUTOFF_ISO = "2025-11-07T13:42:09Z";
-export const EXAMPLE_RIDE_CUTOFF = new Date(EXAMPLE_RIDE_CUTOFF_ISO);
-
 export type Recurrence = "none" | "daily" | "weekly" | "monthly" | "yearly";
 
 export function getNextRecurringDate(

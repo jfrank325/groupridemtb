@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords } from "@/lib/utils";
+import { getDeterministicCoords } from "@/lib/utils";
 import { generalLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
 import { notifyHostOfNewAttendee } from "@/lib/messageNotifications";
 
@@ -140,7 +140,6 @@ export async function PUT(
       recurrence: (updatedRide as typeof updatedRide & { recurrence?: string | null }).recurrence ?? "none",
       date: updatedRide.date.toISOString(),
       createdAt: updatedRide.createdAt.toISOString(),
-      isExample: updatedRide.createdAt.getTime() < EXAMPLE_RIDE_CUTOFF.getTime(),
       trailIds,
       trailNames,
       trailSystems,
@@ -322,7 +321,6 @@ export async function DELETE(
       recurrence: (updatedRide as typeof updatedRide & { recurrence?: string | null }).recurrence ?? "none",
       date: updatedRide.date.toISOString(),
       createdAt: updatedRide.createdAt.toISOString(),
-      isExample: updatedRide.createdAt.getTime() < EXAMPLE_RIDE_CUTOFF.getTime(),
       trailIds,
       trailNames,
       trailSystems,

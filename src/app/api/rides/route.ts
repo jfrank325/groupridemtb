@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generalLimiter, getRateLimitIdentifier, checkRateLimit } from "@/lib/rate-limit";
-import { EXAMPLE_RIDE_CUTOFF, getDeterministicCoords, getNextRecurringDate, Recurrence } from "@/lib/utils";
+import { getDeterministicCoords, getNextRecurringDate, Recurrence } from "@/lib/utils";
 
 export async function GET(req: Request) {
   try {
@@ -52,8 +52,6 @@ export async function GET(req: Request) {
         include: rideInclude,
       });
 
-      const exampleRideCutoff = EXAMPLE_RIDE_CUTOFF;
-
       const now = new Date();
       const normalizedRidesData = await Promise.all(
         ridesData.map(async (rideRecord) => {
@@ -84,7 +82,6 @@ export async function GET(req: Request) {
           recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
           date: ride.date.toISOString(),
           createdAt: ride.createdAt.toISOString(),
-          isExample: ride.createdAt.getTime() < exampleRideCutoff.getTime(),
           trailIds: rideTrails.map((t) => t.id),
           trailNames: rideTrails.map((t) => t.name),
           trailSystems: Array.from(

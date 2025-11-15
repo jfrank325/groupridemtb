@@ -11,7 +11,6 @@ export type Ride = {
   recurrence: string | null;
   role?: "host" | "attendee";
   createdAt: string;
-  isExample: boolean;
   trailIds: string[];
   trailNames: string[];
   trailSystems: string[];

@@ -67,12 +67,6 @@ export function MultipleRidesPopup({ date, rides, onSelectRide, onClose }: Multi
                     <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors mb-1">
                       {ride.name || "Untitled Ride"}
                     </h3>
-                    {ride.isExample && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 mb-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
-                        Example Ride
-                      </span>
-                    )}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
                       <div className="flex items-center gap-1 whitespace-nowrap">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
