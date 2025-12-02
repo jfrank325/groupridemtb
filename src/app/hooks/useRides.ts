@@ -9,6 +9,7 @@ export type Ride = {
   name: string | null;
   location: string | null;
   recurrence: string | null;
+  postponed?: boolean;
   role?: "host" | "attendee";
   createdAt: string;
   trailIds: string[];

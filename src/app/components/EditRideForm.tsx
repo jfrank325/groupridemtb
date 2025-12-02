@@ -20,6 +20,7 @@ type EditRideFormProps = {
     notes: string | null;
     location: string | null;
     recurrence: string | null;
+    postponed: boolean;
     trailIds: string[];
   };
   trails: Partial<Trail>[];
@@ -91,6 +92,7 @@ export function EditRideForm({ ride, trails }: EditRideFormProps) {
       notes: ride.notes ?? '',
       location: ride.location ?? '',
       recurrence: (ride.recurrence as RideFormData['recurrence']) ?? 'none',
+      postponed: ride.postponed ?? false,
     },
   });
 
@@ -191,6 +193,10 @@ export function EditRideForm({ ride, trails }: EditRideFormProps) {
     }
 
     formData.append('recurrence', data.recurrence ?? 'none');
+
+    if (data.postponed !== undefined) {
+      formData.append('postponed', data.postponed ? 'true' : 'false');
+    }
 
     try {
       const result = await updateRide(formData);
@@ -422,9 +428,29 @@ export function EditRideForm({ ride, trails }: EditRideFormProps) {
             ))}
           </select>
           <p className="mt-2 text-xs text-gray-500">
-            Adjust how often this ride repeats. Setting it to “Does not repeat” will stop automatic rescheduling.
+            Adjust how often this ride repeats. Setting it to "Does not repeat" will stop automatic rescheduling.
           </p>
         </div>
+
+        {watch('recurrence') && watch('recurrence') !== 'none' && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('postponed')}
+                className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-semibold text-gray-900">
+                  Postpone this recurring ride
+                </span>
+                <p className="text-xs text-gray-600 mt-1">
+                  Mark this ride as postponed (e.g., due to bad weather or scheduling conflicts). The ride will remain visible but clearly marked as postponed until you reactivate it.
+                </p>
+              </div>
+            </label>
+          </div>
+        )}
 
         <div>
           <label htmlFor="notes" className="block text-sm font-semibold text-gray-900 mb-2">

@@ -131,13 +131,16 @@ export async function PUT(
         rideTrails.map((trail) => trail.trailSystem?.name || trail.name || "Unknown")
       )
     );
-
+    
+    const postponed = (updatedRide as typeof updatedRide & { postponed?: boolean }).postponed ?? false;
+    
     const normalizedRide = {
       id: updatedRide.id,
       name: updatedRide.name,
       notes: updatedRide.notes,
       location: (updatedRide as typeof updatedRide & { location?: string | null }).location ?? null,
       recurrence: (updatedRide as typeof updatedRide & { recurrence?: string | null }).recurrence ?? "none",
+      postponed,
       date: updatedRide.date.toISOString(),
       createdAt: updatedRide.createdAt.toISOString(),
       trailIds,
@@ -313,12 +316,15 @@ export async function DELETE(
       )
     );
 
+    const postponed = (updatedRide as typeof updatedRide & { postponed?: boolean }).postponed ?? false;
+    
     const normalizedRide = {
       id: updatedRide.id,
       name: updatedRide.name,
       notes: updatedRide.notes,
       location: (updatedRide as typeof updatedRide & { location?: string | null }).location ?? null,
       recurrence: (updatedRide as typeof updatedRide & { recurrence?: string | null }).recurrence ?? "none",
+      postponed,
       date: updatedRide.date.toISOString(),
       createdAt: updatedRide.createdAt.toISOString(),
       trailIds,

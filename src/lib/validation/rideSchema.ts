@@ -32,6 +32,7 @@ export const rideSchema = z
       .max(5000, "Notes cannot exceed 5000 characters.")
       .trim()
       .optional(),
+    postponed: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const hasTrails = (data.trailIds?.length ?? 0) > 0;

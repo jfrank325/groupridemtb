@@ -53,6 +53,7 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
   const [joinSuccess, setJoinSuccess] = useState<JoinRideSuccess | null>(null);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
+  const [postponeLoading, setPostponeLoading] = useState(false);
 
   const [localRide, setLocalRide] = useState<Ride>(ride);
   const [shareUrl, setShareUrl] = useState<string>(() => {
@@ -235,6 +236,38 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
     }
   };
 
+  const togglePostpone = async () => {
+    if (!localRide?.id) {
+      return;
+    }
+
+    setPostponeLoading(true);
+
+    try {
+      const res = await fetch(`/api/rides/${localRide.id}/postpone`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ postponed: !localRide.postponed }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update ride");
+      }
+
+      const updatedRide: Ride = data.ride;
+      setLocalRide(updatedRide);
+      onRideUpdate?.(updatedRide);
+    } catch (error) {
+      console.error("Failed to toggle postpone:", error);
+    } finally {
+      setPostponeLoading(false);
+    }
+  };
+
   const successRecurrenceLabel =
     joinSuccess && joinSuccess.recurrence && joinSuccess.recurrence !== "none"
       ? recurrenceLabels[joinSuccess.recurrence as Exclude<Recurrence, "none">]
@@ -276,6 +309,34 @@ export const RideSummary = ({ ride, onRideUpdate }: RideSummaryProps) => {
             <p className="mb-2 text-sm text-gray-600">
               Recurrence: <span className="font-medium text-gray-900">{recurrenceLabel}</span>
             </p>
+          )}
+          {isHost && localRide.recurrence && localRide.recurrence !== "none" && (
+            <div className="mb-4 flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localRide.postponed ?? false}
+                  onChange={togglePostpone}
+                  disabled={postponeLoading}
+                  className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Postpone this ride
+                </span>
+              </label>
+            </div>
+          )}
+          {localRide.postponed && (
+            <div className="mb-4 rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="text-sm font-semibold text-amber-800">
+                  This ride is postponed
+                </span>
+              </div>
+            </div>
           )}
           {localRide.host && (
             <p className="mb-2">

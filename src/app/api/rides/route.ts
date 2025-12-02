@@ -73,6 +73,7 @@ export async function GET(req: Request) {
         .map((ride) => {
         const rideTrails = ride.trails.map((rt) => rt.trail);
         const location = (ride as typeof ride & { location?: string | null }).location ?? null;
+        const postponed = (ride as typeof ride & { postponed?: boolean }).postponed ?? false;
 
         return {
           id: ride.id,
@@ -80,6 +81,7 @@ export async function GET(req: Request) {
           name: ride.name,
           location,
           recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
+          postponed,
           date: ride.date.toISOString(),
           createdAt: ride.createdAt.toISOString(),
           trailIds: rideTrails.map((t) => t.id),

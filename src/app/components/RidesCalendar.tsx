@@ -210,16 +210,30 @@ export function RidesCalendar({ rides, onDateClick, selectedDate }: RidesCalenda
                   {sortedRides.slice(0, 2).map((ride) => {
                     const rideName = ride.name || "Untitled Ride";
                     const truncatedName = rideName.length > 8 ? `${rideName.slice(0, 8)}...` : rideName;
+                    const isPostponed = ride.postponed ?? false;
                     return (
                       <div
                         key={ride.id}
                         className={`
-                          text-[9px] leading-tight px-1 py-0.5 rounded truncate w-full
-                          ${isSelectedDate ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}
+                          text-[9px] leading-tight px-1 py-0.5 rounded truncate w-full flex items-center gap-1
+                          ${
+                            isSelectedDate
+                              ? isPostponed
+                                ? "bg-amber-200/30 text-white"
+                                : "bg-white/20 text-white"
+                              : isPostponed
+                              ? "bg-amber-100 text-amber-800 border border-amber-300"
+                              : "bg-emerald-100 text-emerald-800"
+                          }
                         `}
-                        title={rideName}
+                        title={isPostponed ? `${rideName} (Postponed)` : rideName}
                       >
-                        {truncatedName}
+                        {isPostponed && (
+                          <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        )}
+                        <span className="truncate">{truncatedName}</span>
                       </div>
                     );
                   })}

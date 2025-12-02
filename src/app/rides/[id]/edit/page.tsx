@@ -62,6 +62,7 @@ export default async function EditRidePage({ params }: EditRidePageProps) {
     notes: ride.notes,
     location: (ride as typeof ride & { location?: string | null }).location ?? null,
     recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
+    postponed: ride.postponed ?? false,
     trailIds: ride.trails.map((entry) => entry.trailId),
   };
 

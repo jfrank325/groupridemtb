@@ -57,6 +57,14 @@ export async function updateRide(formData: FormData) {
       ? recurrenceValue
       : undefined;
 
+  const postponedValue = formData.get('postponed');
+  const normalizedPostponed =
+    postponedValue === 'true' || postponedValue === 'on' || postponedValue === '1'
+      ? true
+      : postponedValue === 'false' || postponedValue === 'off' || postponedValue === '0'
+      ? false
+      : undefined;
+
   const raw = {
     name: (formData.get('name') as string | null) ?? undefined,
     date: formData.get('date') as string,
@@ -103,17 +111,32 @@ export async function updateRide(formData: FormData) {
       }
     : { deleteMany: {} };
 
+  const updateData: {
+    name: string;
+    date: Date;
+    durationMin: number;
+    notes: string | null;
+    location: string | null;
+    recurrence: string;
+    trails: typeof trailsUpdate;
+    postponed?: boolean;
+  } = {
+    name: parsed.data.name.trim(),
+    date: new Date(parsed.data.date),
+    durationMin: parsed.data.durationMin,
+    notes: sanitizedNotes,
+    location: sanitizedLocation,
+    recurrence: parsed.data.recurrence,
+    trails: trailsUpdate,
+  };
+
+  if (normalizedPostponed !== undefined) {
+    updateData.postponed = normalizedPostponed;
+  }
+
   await prisma.ride.update({
     where: { id: rideId },
-    data: {
-      name: parsed.data.name.trim(),
-      date: new Date(parsed.data.date),
-      durationMin: parsed.data.durationMin,
-      notes: sanitizedNotes,
-      location: sanitizedLocation,
-      recurrence: parsed.data.recurrence,
-      trails: trailsUpdate,
-    },
+    data: updateData,
   });
 
   revalidatePath('/rides');

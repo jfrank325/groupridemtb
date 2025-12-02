@@ -56,6 +56,7 @@ export const RidesServer = async () => {
             name: ride.name,
             location,
             recurrence: (ride as typeof ride & { recurrence?: string | null }).recurrence ?? "none",
+            postponed: ride.postponed ?? false,
             createdAt: ride.createdAt.toISOString(),
             date: ride.date.toISOString(),
             trailIds: rideTrails.map((t) => t.id),
