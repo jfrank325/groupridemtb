@@ -464,6 +464,103 @@ export function renderDirectMessageEmail({
   `;
 }
 
+interface RidePostponedEmailParams {
+  rideName: string;
+  rideDate: string;
+  rideTime: string;
+  hostName?: string | null;
+  notes?: string | null;
+  rideUrl: string;
+}
+
+export function renderRidePostponedEmail({
+  rideName,
+  rideDate,
+  rideTime,
+  hostName,
+  notes,
+  rideUrl,
+}: RidePostponedEmailParams) {
+  const safeHost = hostName?.trim() || "The ride host";
+  const additionalNotes = notes?.trim();
+
+  return `
+    <table cellpadding="0" cellspacing="0" role="presentation" style="width: 100%; background-color: #f9fafb; padding: 24px 0;">
+      <tr>
+        <td>
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; width: 100%; max-width: 520px; background-color: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;">
+            <tr>
+              <td>
+                <p style="margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 600; color: #f59e0b;">
+                  Ride postponed
+                </p>
+                <h1 style="margin: 0 0 16px; font-size: 24px; line-height: 32px; font-weight: 700; color: #111827;">
+                  ${rideName}
+                </h1>
+                <p style="margin: 0 0 20px; font-size: 14px; line-height: 22px; color: #4b5563;">
+                  ${safeHost} has postponed this group ride. The ride is still active, but the scheduled date/time may need to be updated. Check the ride page for the latest information.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table cellpadding="0" cellspacing="0" role="presentation" style="width: 100%;">
+                  ${renderInfoRow("Original date", rideDate)}
+                  ${renderInfoRow("Original time", rideTime)}
+                </table>
+              </td>
+            </tr>
+            ${
+              additionalNotes
+                ? `<tr>
+                    <td style="padding: 16px 0 0;">
+                      <div style="background-color: #fef3c7; border-radius: 12px; padding: 16px; border-left: 4px solid #f59e0b;">
+                        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #111827;">
+                          Message from ${safeHost}
+                        </p>
+                        <p style="margin: 0; font-size: 13px; line-height: 20px; color: #4b5563;">
+                          ${additionalNotes.replace(/\n/g, "<br />")}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>`
+                : ""
+            }
+            <tr>
+              <td style="padding: 24px 0;">
+                <a
+                  href="${rideUrl}"
+                  style="
+                    display: inline-block;
+                    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+                    color: #ffffff;
+                    text-decoration: none;
+                    font-weight: 600;
+                    padding: 12px 24px;
+                    border-radius: 9999px;
+                    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.25);
+                    text-align: center;
+                    font-size: 14px;
+                  "
+                >
+                  View ride details
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                <p style="margin: 0; font-size: 12px; line-height: 18px; color: #9ca3af;">
+                  You are receiving this email because you RSVP'd to this ride. We'll always keep you informed of schedule changes.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 interface HostJoinEmailParams {
   hostName: string;
   attendeeName: string;

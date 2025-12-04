@@ -70,6 +70,10 @@ export async function sendRideCancellationEmail(args: SendLocalRideAlertArgs): P
   return sendMailgunMessage(args);
 }
 
+export async function sendRidePostponementEmail(args: SendLocalRideAlertArgs): Promise<boolean> {
+  return sendMailgunMessage(args);
+}
+
 export async function sendMessageNotificationEmail(args: SendLocalRideAlertArgs): Promise<boolean> {
   return sendMailgunMessage(args);
 }

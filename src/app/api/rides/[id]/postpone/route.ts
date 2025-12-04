@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { queueRidePostponementNotifications } from "@/lib/ridePostponementNotifications";
 
 export async function PUT(
   req: NextRequest,
@@ -35,16 +36,21 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const ride = await prisma.ride.findUnique({
+    const existingRide = await prisma.ride.findUnique({
       where: { id },
       select: { userId: true },
     });
 
-    if (!ride) {
+    // Get current postponed status to check if we need to send notifications
+    const currentRide = await prisma.ride.findUnique({
+      where: { id },
+    }) as { postponed?: boolean } | null;
+
+    if (!existingRide) {
       return NextResponse.json({ error: "Ride not found" }, { status: 404 });
     }
 
-    if (ride.userId !== user.id) {
+    if (existingRide.userId !== user.id) {
       return NextResponse.json(
         { error: "Only the host can postpone a ride" },
         { status: 403 }
@@ -57,8 +63,22 @@ export async function PUT(
           trail: { include: { trailSystem: true } },
         },
       },
-      attendees: { include: { user: true } },
-      host: { select: { id: true, name: true } },
+      attendees: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              emailNotificationsEnabled: true,
+              notifyRideCancellations: true,
+            },
+          },
+        },
+      },
+      host: {
+        select: { id: true, name: true, email: true },
+      },
     } as const;
 
     const updatedRide = await prisma.ride.update({
@@ -67,6 +87,19 @@ export async function PUT(
       data: { postponed: postponedValue },
       include: rideInclude,
     }) as any;
+
+    // Only send notifications when ride is being postponed (true), not when un-postponing (false)
+    const wasAlreadyPostponed = currentRide?.postponed ?? false;
+    if (postponedValue && !wasAlreadyPostponed) {
+      queueRidePostponementNotifications({
+        id: updatedRide.id,
+        name: updatedRide.name,
+        date: updatedRide.date,
+        notes: updatedRide.notes,
+        host: updatedRide.host,
+        attendees: updatedRide.attendees,
+      });
+    }
 
     // Transform to match frontend Ride type
     const rideTrails = updatedRide.trails.map((rt: any) => rt.trail);
