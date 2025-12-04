@@ -5,6 +5,7 @@ import maplibregl from "maplibre-gl";
 import { type Trail } from "../hooks/useTrails";
 import TrailPopup from "./TrailPopup";
 import TrailHoverPopup from "./TrailHoverPopup";
+import FullscreenButton from "./FullscreenButton";
 
 interface TrailMapProps {
   trails: Trail[];
@@ -62,6 +63,37 @@ export default function TrailMap({ trails, highlightedTrailIds = [], onTrailHove
 
     mediaQuery.addListener(listener);
     return () => mediaQuery.removeListener(listener);
+  }, []);
+
+  // Handle map resize on fullscreen change
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      // Small delay to ensure DOM has updated
+      setTimeout(handleResize, 100);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   // Fetch coordinates from MTB Projects API for trails that need them
@@ -584,7 +616,11 @@ export default function TrailMap({ trails, highlightedTrailIds = [], onTrailHove
 
   return (
     <div className="relative w-full h-[600px] rounded-xl shadow-md">
-      <div ref={mapContainer} className="w-full h-full" />
+      <div ref={mapContainer} className="w-full h-full relative">
+        <div className="absolute top-2 left-2 z-[9999]">
+          <FullscreenButton containerRef={mapContainer} />
+        </div>
+      </div>
       {hoveredTrail && hoverPosition && (
         <div
           className="absolute z-20 pointer-events-none"
