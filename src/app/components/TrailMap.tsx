@@ -615,7 +615,7 @@ export default function TrailMap({ trails, highlightedTrailIds = [], onTrailHove
   };
 
   return (
-    <div className="relative w-full h-[600px] rounded-xl shadow-md">
+    <div className="relative w-full h-[600px] max-w-[600px] rounded-xl shadow-md">
       <div ref={mapContainer} className="w-full h-full relative">
         <div className="absolute top-2 left-2 z-[9999]">
           <FullscreenButton containerRef={mapContainer} />

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 interface FullscreenButtonProps {
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   className?: string;
 }
 
